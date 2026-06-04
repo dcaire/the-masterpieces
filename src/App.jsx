@@ -1,264 +1,462 @@
-import {useState,useEffect} from 'react'
-import {sb} from './sb'
+import { useState, useEffect, useMemo } from 'react'
+import { sb } from './sb'
+import { buildEmail, buildAvailabilityEmail, mailto, TEMPLATES } from './email'
+import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Copy, Send, Bell, MapPin, Arrow, Search, Dollar } from './icons'
 
-const fmt=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}catch{return d||''}};
-const dU=d=>Math.ceil((new Date(d+'T12:00:00')-new Date())/86400000);
-const $=n=>'$'+Number(n).toLocaleString();
-const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2);
-const PC={Soprano:{bg:'#FDE8EF',fg:'#B5315E',bd:'#F5C6D6'},Alto:{bg:'#E8F0FD',fg:'#2B5EA7',bd:'#C6D6F5'},Tenor:{bg:'#FDF3E8',fg:'#A7712B',bd:'#F5DFC6'},Bass:{bg:'#E8FDF0',fg:'#2B7A48',bd:'#C6F5D6'}};
-const SB={new:{bg:'#E3F2FD',fg:'#1565C0'},contacted:{bg:'#FFF3E0',fg:'#E65100'},confirmed:{bg:'#E8F5E9',fg:'#2E7D32'},lost:{bg:'#FFEBEE',fg:'#C62828'},pending:{bg:'#FFF8E1',fg:'#F57F17'}};
-const Bd=({s})=>{const c=SB[s]||SB.new;return<span style={{display:'inline-block',padding:'2px 8px',borderRadius:5,fontSize:10.5,fontWeight:600,background:c.bg,color:c.fg,textTransform:'capitalize'}}>{s}</span>};
+/* ---------- helpers ---------- */
+const fmt = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return d || '' } }
+const fmtLong = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }) } catch { return d || '' } }
+const dU = d => Math.ceil((new Date(d + 'T12:00:00') - new Date()) / 86400000)
+const $ = n => '$' + Number(n || 0).toLocaleString()
+const ini = n => (n || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-const css=`*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',system-ui,sans-serif;background:#F5F4F0;color:#1a1a1a;min-height:100vh}button{cursor:pointer;font-family:inherit;border:none;background:none}input,textarea,select{font-family:inherit;outline:none}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}@keyframes fadeUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes slideIn{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}`;
+/* ---------- design tokens ---------- */
+const G = {
+  purple: 'linear-gradient(135deg,#7C3AED,#EC4899)',
+  teal: 'linear-gradient(135deg,#06B6D4,#3B82F6)',
+  amber: 'linear-gradient(135deg,#F59E0B,#FB7185)',
+  green: 'linear-gradient(135deg,#10B981,#06B6D4)',
+}
+const VP = {
+  Soprano: { bg: '#FCE7F3', fg: '#DB2777', bd: '#F9A8D4', grad: 'linear-gradient(135deg,#F472B6,#DB2777)' },
+  Alto: { bg: '#EDE9FE', fg: '#7C3AED', bd: '#C4B5FD', grad: 'linear-gradient(135deg,#A78BFA,#7C3AED)' },
+  Tenor: { bg: '#FEF3C7', fg: '#D97706', bd: '#FCD34D', grad: 'linear-gradient(135deg,#FBBF24,#D97706)' },
+  Bass: { bg: '#CFFAFE', fg: '#0891B2', bd: '#67E8F9', grad: 'linear-gradient(135deg,#22D3EE,#0891B2)' },
+}
+const SB = {
+  new: { bg: '#DBEAFE', fg: '#1D4ED8' }, contacted: { bg: '#FEF3C7', fg: '#B45309' },
+  confirmed: { bg: '#D1FAE5', fg: '#047857' }, lost: { bg: '#FEE2E2', fg: '#B91C1C' }, pending: { bg: '#FEF3C7', fg: '#B45309' },
+}
+const RESP = { yes: { bg: '#D1FAE5', fg: '#047857', bd: '#6EE7B7' }, no: { bg: '#FEE2E2', fg: '#B91C1C', bd: '#FCA5A5' }, pending: { bg: '#FEF3C7', fg: '#B45309', bd: '#FCD34D' } }
 
-export default function App(){
-  const[tab,sTab]=useState('dashboard');
-  const[R,sR]=useState([]);const[M,sM]=useState([]);const[I,sI]=useState([]);const[E,sE]=useState([]);const[A,sA]=useState([]);
-  const[ld,sLd]=useState(true);const[err,sErr]=useState(null);const[toast,sTst]=useState(null);
-  const[sInq,sSInq]=useState(null);const[sEv,sSEv]=useState(null);const[sSng,sSSng]=useState(null);
-  const[mf,sMf]=useState('all');const[lf,sLf]=useState('all');const[rf,sRf]=useState('all');const[q,sQ]=useState('');
-  const[shS,sShS]=useState(false);const[shI,sShI]=useState(false);
+const css = `
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#f6f3fc;color:#1f2937;min-height:100vh}
+.mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(60vw 50vh at 8% -5%,rgba(124,58,237,.16),transparent 60%),
+  radial-gradient(55vw 45vh at 100% 0%,rgba(236,72,153,.14),transparent 55%),
+  radial-gradient(50vw 50vh at 50% 110%,rgba(6,182,212,.12),transparent 60%)}
+button{cursor:pointer;font-family:inherit;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit;outline:none}
+::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-thumb{background:#d8cdf0;border-radius:4px}
+.serif{font-family:'Playfair Display',serif}
+.card{background:#fff;border-radius:18px;border:1px solid #efe9fa;box-shadow:0 4px 22px rgba(124,58,237,.05)}
+.lift{transition:transform .18s ease,box-shadow .18s ease}
+.lift:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(124,58,237,.14)}
+.gtext{background:linear-gradient(135deg,#7C3AED,#EC4899);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+@keyframes fadeUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.fade{animation:fadeUp .45s cubic-bezier(.2,.7,.3,1)}
+`
 
-  const noti=m=>{sTst(m);setTimeout(()=>sTst(null),3000)};
-  const nav=t=>{sTab(t);sSInq(null);sSEv(null);sSSng(null)};
+/* ---------- atoms ---------- */
+const Avatar = ({ name, part, type, size = 44 }) => {
+  const pc = VP[part] || VP.Soprano
+  return <div style={{ width: size, height: size, borderRadius: '50%', background: pc.grad, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.32, fontWeight: 800, flexShrink: 0, boxShadow: `0 4px 12px ${pc.fg}40`, border: type === 'guest' ? '2.5px dashed #fff' : 'none', outline: type === 'guest' ? `2px solid ${pc.bd}` : 'none' }}>{ini(name)}</div>
+}
+const Badge = ({ s }) => { const c = SB[s] || SB.new; return <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 10.5, fontWeight: 700, background: c.bg, color: c.fg, textTransform: 'capitalize', letterSpacing: '.02em' }}>{s}</span> }
+const Pill = ({ children, bg, fg }) => <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: 10.5, fontWeight: 700, background: bg, color: fg }}>{children}</span>
+const IconChip = ({ grad, children, size = 42 }) => <div style={{ width: size, height: size, borderRadius: 13, background: grad, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(124,58,237,.18)', flexShrink: 0 }}>{children}</div>
+const SectionTitle = ({ children }) => <div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.09em', color: '#9b8fc0', marginBottom: 13 }}>{children}</div>
 
-  useEffect(()=>{(async()=>{try{
-    const[r,m,i,e,a]=await Promise.all([sb.from('roster').select('*').order('id'),sb.from('music_library').select('*').order('id'),sb.from('inquiries').select('*').order('created_at',{ascending:false}),sb.from('events').select('*').order('event_date'),sb.from('member_availability').select('*')]);
-    if(r.error)throw r.error;sR(r.data||[]);sM(m.data||[]);sI(i.data||[]);sE(e.data||[]);sA(a.data||[]);
-  }catch(e){sErr(e.message||'Connection failed')}sLd(false)})()},[]);
+/* ---------- app ---------- */
+export default function App() {
+  const [tab, sTab] = useState('dashboard')
+  const [R, sR] = useState([]); const [M, sM] = useState([]); const [I, sI] = useState([]); const [E, sE] = useState([]); const [A, sA] = useState([])
+  const [ld, sLd] = useState(true); const [err, sErr] = useState(null); const [toast, sTst] = useState(null)
+  const [sInq, sSInq] = useState(null); const [sEv, sSEv] = useState(null); const [sSng, sSSng] = useState(null)
+  const [rf, sRf] = useState('all'); const [lf, sLf] = useState('all'); const [mf, sMf] = useState('all'); const [q, sQ] = useState('')
+  const [shS, sShS] = useState(false); const [shI, sShI] = useState(false); const [shM, sShM] = useState(false)
+  const [email, sEmail] = useState(null) // {lead} or {availability:ev}
 
-  const aM={};A.forEach(a=>{if(!aM[a.event_id])aM[a.event_id]={};aM[a.event_id][a.roster_id]=a.response});
-  const aR=R.filter(r=>r.active);
-  const tMB=M.reduce((s,x)=>s+Number(x.file_size_mb),0).toFixed(1);
-  const sN=M.filter(x=>!x.cloud_only).length;const sMB=M.filter(x=>!x.cloud_only).reduce((s,x)=>s+Number(x.file_size_mb),0).toFixed(1);
-  const pFU=I.filter(x=>x.next_follow_up&&new Date(x.next_follow_up+'T12:00:00')<=new Date(Date.now()+3*86400000)).length;
-  const pipe=I.filter(x=>x.status!=='lost').reduce((s,x)=>s+Number(x.expected_donation),0);
+  const noti = m => { sTst(m); setTimeout(() => sTst(null), 3000) }
+  const nav = t => { sTab(t); sSInq(null); sSEv(null); sSSng(null) }
 
-  const togSync=async id=>{const s=M.find(x=>x.id===id);await sb.from('music_library').update({cloud_only:!s.cloud_only}).eq('id',id);sM(p=>p.map(x=>x.id===id?{...x,cloud_only:!x.cloud_only}:x));noti(s.cloud_only?`"${s.title}" synced to iPads`:`"${s.title}" cloud only`)};
-  const updIS=async(id,st)=>{const t=new Date().toISOString().split('T')[0];await sb.from('inquiries').update({status:st,last_follow_up:t}).eq('id',id);sI(p=>p.map(x=>x.id===id?{...x,status:st,last_follow_up:t}:x));noti(`Updated to "${st}"`)};
-  const logFU=async id=>{const t=new Date().toISOString().split('T')[0],n=new Date(Date.now()+7*86400000).toISOString().split('T')[0];await sb.from('inquiries').update({last_follow_up:t,next_follow_up:n}).eq('id',id);sI(p=>p.map(x=>x.id===id?{...x,last_follow_up:t,next_follow_up:n}:x));noti('Follow-up logged')};
-  const addI=async d=>{const n=new Date(Date.now()+3*86400000).toISOString().split('T')[0];const{data:ins}=await sb.from('inquiries').insert({contact_name:d.contact,organization:d.org,phone:d.phone,email:d.email,event_date:d.eventDate||null,event_type:d.eventType,expected_donation:d.expectedDonation,notes:d.notes,status:'new',next_follow_up:n}).select().single();if(ins){sI(p=>[ins,...p]);sShI(false);noti('Inquiry added')}};
-  const addS=async d=>{const{data:ins}=await sb.from('roster').insert({name:d.name,phone:d.phone,email:d.email,voice_part:d.voicePart,singer_type:d.type}).select().single();if(ins){sR(p=>[...p,ins]);sShS(false);noti(`${d.name} added`)}};
-  const updR=async(eid,rid,resp)=>{const ex=A.find(a=>a.event_id===eid&&a.roster_id===rid);if(ex){await sb.from('member_availability').update({response:resp}).eq('id',ex.id);sA(p=>p.map(a=>a.id===ex.id?{...a,response:resp}:a))}else{const{data:ins}=await sb.from('member_availability').insert({event_id:eid,roster_id:rid,response:resp}).select().single();if(ins)sA(p=>[...p,ins])}};
-  const togAct=async id=>{const s=R.find(r=>r.id===id);await sb.from('roster').update({active:!s.active}).eq('id',id);sR(p=>p.map(r=>r.id===id?{...r,active:!r.active}:r));noti(`${s.name} ${s.active?'deactivated':'activated'}`)};
-  const togTy=async id=>{const s=R.find(r=>r.id===id);const nt=s.singer_type==='member'?'guest':'member';await sb.from('roster').update({singer_type:nt}).eq('id',id);sR(p=>p.map(r=>r.id===id?{...r,singer_type:nt}:r));noti(`${s.name} now ${nt}`)};
+  useEffect(() => { (async () => {
+    try {
+      const [r, m, i, e, a] = await Promise.all([
+        sb.from('roster').select('*').order('id'), sb.from('music_library').select('*').order('id'),
+        sb.from('inquiries').select('*').order('created_at', { ascending: false }),
+        sb.from('events').select('*').order('event_date'), sb.from('member_availability').select('*')])
+      if (r.error) throw r.error
+      sR(r.data || []); sM(m.data || []); sI(i.data || []); sE(e.data || []); sA(a.data || [])
+    } catch (e) { sErr(e.message || 'Connection failed') }
+    sLd(false)
+  })() }, [])
 
-  if(ld)return<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div><div style={{fontSize:18,fontWeight:600}}>Loading The Masterpieces...</div><div style={{fontSize:13,color:'#888',marginTop:6}}>Connecting to database</div></div></div>;
-  if(err)return<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center'}}><div style={{fontSize:18,fontWeight:600,color:'#C44D3F'}}>Connection Error</div><div style={{fontSize:13,color:'#888',margin:'8px 0 16px'}}>{err}</div><button onClick={()=>location.reload()} style={{padding:'10px 20px',borderRadius:8,background:'#1a1a1a',color:'#fff',fontSize:13,fontWeight:600}}>Retry</button></div></div>;
+  const aM = useMemo(() => { const o = {}; A.forEach(a => { (o[a.event_id] ||= {})[a.roster_id] = a.response }); return o }, [A])
+  const aR = R.filter(r => r.active)
+  const core = aR.filter(r => r.singer_type === 'member'); const guests = aR.filter(r => r.singer_type === 'guest')
+  const tMB = M.reduce((s, x) => s + Number(x.file_size_mb), 0).toFixed(1)
+  const sN = M.filter(x => !x.cloud_only).length; const sMB = M.filter(x => !x.cloud_only).reduce((s, x) => s + Number(x.file_size_mb), 0).toFixed(1)
+  const pFU = I.filter(x => x.status !== 'lost' && x.next_follow_up && new Date(x.next_follow_up + 'T12:00:00') <= new Date(Date.now() + 3 * 86400000)).length
+  const pipe = I.filter(x => x.status !== 'lost').reduce((s, x) => s + Number(x.expected_donation), 0)
 
-  const tabs=[['dashboard','Dashboard'],['roster','Roster'],['music','Music'],['leads','Leads'],['events','Events']];
+  /* data ops */
+  const togSync = async id => { const s = M.find(x => x.id === id); await sb.from('music_library').update({ cloud_only: !s.cloud_only }).eq('id', id); sM(p => p.map(x => x.id === id ? { ...x, cloud_only: !x.cloud_only } : x)); noti(s.cloud_only ? `“${s.title}” synced to iPads` : `“${s.title}” set to cloud only`) }
+  const updIS = async (id, st) => { const t = new Date().toISOString().split('T')[0]; await sb.from('inquiries').update({ status: st, last_follow_up: t }).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, status: st, last_follow_up: t } : x)); noti(`Marked “${st}”`) }
+  const logFU = async id => { const t = new Date().toISOString().split('T')[0], n = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]; await sb.from('inquiries').update({ last_follow_up: t, next_follow_up: n }).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, last_follow_up: t, next_follow_up: n } : x)); noti('Follow-up logged · next in 7 days') }
+  const addI = async d => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: d.contact, organization: d.org, phone: d.phone, email: d.email, event_date: d.eventDate || null, event_type: d.eventType, expected_donation: d.expectedDonation, notes: d.notes, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); sShI(false); noti('Booking inquiry added') } }
+  const addS = async d => { const { data: ins } = await sb.from('roster').insert({ name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type, active: true }).select().single(); if (ins) { sR(p => [...p, ins]); sShS(false); noti(`${d.name} added`) } }
+  const addM = async d => { const { data: ins } = await sb.from('music_library').insert({ title: d.title, arranger: d.arranger, category: d.category, voice_parts: ['Soprano', 'Alto', 'Tenor', 'Bass'], pages: d.pages, file_size_mb: d.size, cloud_only: d.dest === 'Cloud only' }).select().single(); if (ins) { sM(p => [...p, ins]); sShM(false); noti(`“${d.title}” uploaded${d.dest === 'Cloud only' ? '' : ' & synced to iPads'}`) } }
+  const updR = async (eid, rid, resp) => { const ex = A.find(a => a.event_id === eid && a.roster_id === rid); if (ex) { await sb.from('member_availability').update({ response: resp }).eq('id', ex.id); sA(p => p.map(a => a.id === ex.id ? { ...a, response: resp } : a)) } else { const { data: ins } = await sb.from('member_availability').insert({ event_id: eid, roster_id: rid, response: resp }).select().single(); if (ins) sA(p => [...p, ins]) } }
+  const togAct = async id => { const s = R.find(r => r.id === id); await sb.from('roster').update({ active: !s.active }).eq('id', id); sR(p => p.map(r => r.id === id ? { ...r, active: !r.active } : r)); noti(`${s.name} ${s.active ? 'set inactive' : 'reactivated'}`) }
+  const togTy = async id => { const s = R.find(r => r.id === id); const nt = s.singer_type === 'member' ? 'guest' : 'member'; await sb.from('roster').update({ singer_type: nt }).eq('id', id); sR(p => p.map(r => r.id === id ? { ...r, singer_type: nt } : r)); noti(`${s.name} → ${nt === 'member' ? 'core quartet' : 'guest singer'}`) }
 
-  return<div><style>{css}</style>
-    {toast&&<div style={{position:'fixed',top:20,right:20,zIndex:1000,background:'#1a1a1a',color:'#fff',padding:'12px 20px',borderRadius:10,fontSize:13,fontWeight:500,boxShadow:'0 8px 32px rgba(0,0,0,.2)',animation:'slideIn .3s ease'}}>{toast}</div>}
-    <header style={{background:'#1a1a1a',color:'#fff'}}><div style={{maxWidth:1200,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:58}}>
-      <div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#C9956B,#E8C17A)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:700,color:'#fff'}}>M</div><span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:600}}>The Masterpieces</span></div>
-      <div style={{display:'flex',gap:2}}>{tabs.map(([id,l])=><button key={id} onClick={()=>nav(id)} style={{padding:'7px 14px',borderRadius:7,background:tab===id?'rgba(255,255,255,.13)':'transparent',color:tab===id?'#fff':'rgba(255,255,255,.45)',fontSize:12.5,fontWeight:500}}>{l}</button>)}</div>
-      <div style={{fontSize:12,color:'rgba(255,255,255,.4)'}}>Beth, Manager</div>
-    </div></header>
-    <main style={{maxWidth:1200,margin:'0 auto',padding:'24px 24px 60px'}}>
-      {tab==='dashboard'&&<Dash {...{R,aR,M,I,E,aM,tMB,sN,sMB,pFU,pipe,nav}}/>}
-      {tab==='roster'&&<Rost {...{R,rf,sRf,shS,sShS,sSng,sSSng,addS,togAct,togTy,E,aM}}/>}
-      {tab==='music'&&<Mus {...{M,q,sQ,mf,sMf,togSync,tMB,sN,sMB}}/>}
-      {tab==='leads'&&<Leads {...{I,lf,sLf,shI,sShI,sInq,sSInq,updIS,logFU,addI}}/>}
-      {tab==='events'&&<Evts {...{E,sEv,sSEv,updR,M,R:R,aM,noti}}/>}
+  if (ld) return <Splash />
+  if (err) return <ErrorView err={err} />
+
+  const tabs = [['dashboard', 'Dashboard', Sparkle], ['quartet', 'Quartet', Users], ['music', 'Music', Note], ['bookings', 'Bookings', Mail], ['events', 'Events', Calendar]]
+
+  return <div style={{ position: 'relative', zIndex: 1 }}>
+    <style>{css}</style><Defs /><div className="mesh" />
+    {toast && <div style={{ position: 'fixed', top: 22, right: 22, zIndex: 2000, background: '#1f2937', color: '#fff', padding: '13px 20px', borderRadius: 13, fontSize: 13, fontWeight: 600, boxShadow: '0 14px 40px rgba(0,0,0,.25)', animation: 'slideIn .3s ease', display: 'flex', alignItems: 'center', gap: 9 }}><span style={{ color: '#34D399', display: 'flex' }}><Check size={17} /></span>{toast}</div>}
+
+    <header style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(14px)', borderBottom: '1px solid #efe9fa' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11, cursor: 'pointer' }} onClick={() => nav('dashboard')}>
+          <Logo size={38} />
+          <div><div className="serif" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1 }}>The Masterpieces</div><div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.18em', color: '#a99fc8', textTransform: 'uppercase', marginTop: 3 }}>Vocal Quartet</div></div>
+        </div>
+        <nav style={{ display: 'flex', gap: 3, background: '#f1ecfb', padding: 4, borderRadius: 13 }}>{tabs.map(([id, l, Ic]) => <button key={id} onClick={() => nav(id)} style={{ padding: '8px 15px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: tab === id ? '#fff' : '#7a6fa0', background: tab === id ? G.purple : 'transparent', boxShadow: tab === id ? '0 6px 16px rgba(124,58,237,.3)' : 'none', transition: 'all .2s' }}><Ic size={15} />{l}</button>)}</nav>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, fontWeight: 700 }}>Beth</div><div style={{ fontSize: 11, color: '#a99fc8' }}>Manager</div></div>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: G.amber, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, boxShadow: '0 4px 12px rgba(245,158,11,.35)' }}>B</div>
+        </div>
+      </div>
+    </header>
+
+    <main style={{ maxWidth: 1180, margin: '0 auto', padding: '30px 22px 70px' }}>
+      {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }} />}
+      {tab === 'quartet' && <Quartet {...{ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
+      {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail }} />}
+      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }} />}
     </main>
-  </div>;
+
+    {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy }} />}
+    {shS && <FModal t="Add a Singer" sub="Add a core member or guest singer" onX={() => sShS(false)} onOk={addS} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: 'member' }]} />}
+    {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'expectedDonation', l: 'Expected donation ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
+    {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Gospel', 'Classical', 'Hymn', 'Contemporary', 'Holiday', 'Spiritual', 'Other'], df: 'Gospel' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
+    {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti }} />}
+  </div>
 }
 
-function Dash({R,aR,M,I,E,aM,tMB,sN,sMB,pFU,pipe,nav}){
-  const cards=[[`Active Singers`,aR.length,`${R.filter(r=>r.active&&r.singer_type==='member').length} members, ${R.filter(r=>r.active&&r.singer_type==='guest').length} guests`,'#3B7C8C'],['Cloud Library',M.length,`${tMB} MB total, ${sN} on iPads`,'#6B5CA5'],['Follow-ups',pFU,'within 3 days',pFU>0?'#C44D3F':'#5A8F5C'],['Pipeline',$(pipe),`${I.filter(i=>i.status!=='lost').length} leads`,'#C9956B']];
-  const nxt=E.filter(e=>dU(e.event_date)>0).sort((a,b)=>new Date(a.event_date)-new Date(b.event_date))[0];
-  const nA=nxt?(aM[nxt.id]||{}):{};
-  return<div style={{animation:'fadeUp .4s ease'}}>
-    <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:600,marginBottom:4}}>Good {new Date().getHours()<12?'morning':new Date().getHours()<17?'afternoon':'evening'}, Beth</h1>
-    <p style={{color:'#888',fontSize:13.5,marginBottom:24}}>Here's what needs your attention today.</p>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:24}}>
-      {cards.map(([l,v,s,c],i)=><div key={i} style={{background:'#fff',borderRadius:12,padding:18,border:'1px solid #eae9e4'}}>
-        <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#aaa',marginBottom:10}}>{l}</div>
-        <div style={{fontSize:24,fontWeight:700,color:c}}>{v}</div>
-        <div style={{fontSize:11.5,color:'#aaa',marginTop:2}}>{s}</div>
+/* ---------- splash / error ---------- */
+const Splash = () => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}><style>{css}</style><Defs /><div className="mesh" /><div style={{ animation: 'pop .5s ease' }}><Logo size={64} /></div><div style={{ textAlign: 'center', zIndex: 1 }}><div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>The Masterpieces</div><div style={{ fontSize: 13, color: '#9b8fc0', marginTop: 5 }}>Tuning up…</div></div></div>
+const ErrorView = ({ err }) => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><style>{css}</style><div className="card" style={{ textAlign: 'center', padding: 40, maxWidth: 380 }}><div style={{ fontSize: 17, fontWeight: 700, color: '#B91C1C' }}>Connection Error</div><div style={{ fontSize: 13, color: '#888', margin: '10px 0 18px' }}>{err}</div><button onClick={() => location.reload()} style={{ padding: '11px 24px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700 }}>Retry</button></div></div>
+
+/* ---------- dashboard ---------- */
+function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }) {
+  const hr = new Date().getHours()
+  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
+  const nxt = E.filter(e => dU(e.event_date) > 0).sort((a, b) => new Date(a.event_date) - new Date(b.event_date))[0]
+  const nA = nxt ? (aM[nxt.id] || {}) : {}
+  const cards = [
+    { l: 'The Quartet', v: core.length, s: guests.length ? `+ ${guests.length} guest singer${guests.length > 1 ? 's' : ''}` : 'Core voices', grad: G.purple, ic: <Users size={20} />, go: 'quartet' },
+    { l: 'Cloud Library', v: M.length, s: `${sN} on iPads · ${tMB} MB`, grad: G.teal, ic: <Note size={20} />, go: 'music' },
+    { l: 'Follow-ups Due', v: pFU, s: 'within 3 days', grad: G.amber, ic: <Bell size={20} />, go: 'bookings' },
+    { l: 'Pipeline', v: $(pipe), s: `${I.filter(i => i.status !== 'lost').length} active leads`, grad: G.green, ic: <Dollar size={20} />, go: 'bookings' },
+  ]
+  return <div className="fade">
+    <div style={{ marginBottom: 26 }}>
+      <h1 className="serif" style={{ fontSize: 30, fontWeight: 800 }}>{greet}, Beth 👋</h1>
+      <p style={{ color: '#8b7fb0', fontSize: 14.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
+      {cards.map((c, i) => <div key={i} className="card lift" onClick={() => nav(c.go)} style={{ padding: 20, cursor: 'pointer' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}><div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#a99fc8' }}>{c.l}</div><IconChip grad={c.grad} size={40}>{c.ic}</IconChip></div>
+        <div style={{ fontSize: 32, fontWeight: 800, marginTop: 14, color: '#1f2937' }}>{c.v}</div>
+        <div style={{ fontSize: 12.5, color: '#a99fc8', marginTop: 2 }}>{c.s}</div>
       </div>)}
     </div>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-      {nxt&&<div style={{background:'#fff',borderRadius:12,padding:22,border:'1px solid #eae9e4'}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:14}}><span style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#aaa'}}>Next Performance</span><span style={{fontSize:11,color:'#C44D3F',fontWeight:600}}>{dU(nxt.event_date)} days</span></div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:600,marginBottom:3}}>{nxt.title}</div>
-        <div style={{fontSize:12.5,color:'#888',marginBottom:14}}>{fmt(nxt.event_date)} at {nxt.event_time}</div>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>{Object.entries(nA).map(([rid,resp])=>{const m=R.find(x=>x.id===+rid);if(!m)return null;const bg=resp==='yes'?'#E8F5E9':resp==='no'?'#FFEBEE':'#FFF8E1';const fg=resp==='yes'?'#2E7D32':resp==='no'?'#C62828':'#F57F17';return<div key={rid} style={{width:32,height:32,borderRadius:'50%',background:bg,color:fg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,border:`2px solid ${fg}30`}} title={`${m.name}: ${resp}`}>{ini(m.name)}</div>})}</div>
-        <div style={{display:'flex',gap:14,fontSize:12}}><span style={{color:'#2E7D32'}}>{Object.values(nA).filter(r=>r==='yes').length} yes</span><span style={{color:'#F57F17'}}>{Object.values(nA).filter(r=>r==='pending').length} pending</span><span style={{color:'#C62828'}}>{Object.values(nA).filter(r=>r==='no').length} no</span></div>
-      </div>}
-      <div style={{background:'#fff',borderRadius:12,padding:22,border:'1px solid #eae9e4'}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:14}}><span style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#aaa'}}>Voice Parts</span><button onClick={()=>nav('roster')} style={{fontSize:11.5,color:'#3B7C8C',fontWeight:600}}>View all →</button></div>
-        {['Soprano','Alto','Tenor','Bass'].map(p=>{const pc=PC[p];const pm=aR.filter(r=>r.voice_part===p);return<div key={p} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid #f0efeb'}}>
-          <span style={{padding:'3px 8px',borderRadius:5,fontSize:11,fontWeight:700,background:pc.bg,color:pc.fg}}>{p[0]}</span>
-          <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:500}}>{p}</div><div style={{fontSize:11.5,color:'#aaa'}}>{pm.filter(r=>r.singer_type==='member').length}m{pm.filter(r=>r.singer_type==='guest').length>0?` ${pm.filter(r=>r.singer_type==='guest').length}g`:''}</div></div>
-          <div style={{display:'flex',gap:3}}>{pm.slice(0,4).map(x=><div key={x.id} style={{width:28,height:28,borderRadius:'50%',background:pc.bg,color:pc.fg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9.5,fontWeight:700,border:x.singer_type==='guest'?`2px dashed ${pc.bd}`:`2px solid ${pc.bd}`}}>{ini(x.name)}</div>)}</div>
-        </div>})}
+    <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 18 }}>
+      {nxt ? <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ background: G.purple, padding: '20px 24px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', right: -10, top: -10, opacity: .18 }}><Note size={92} /></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', opacity: .85 }}>Next Performance</span><span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(255,255,255,.2)', padding: '3px 11px', borderRadius: 20 }}>in {dU(nxt.event_date)} days</span></div>
+          <div className="serif" style={{ fontSize: 21, fontWeight: 700 }}>{nxt.title}</div>
+          <div style={{ fontSize: 13, opacity: .9, marginTop: 5, display: 'flex', gap: 14, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Calendar size={14} />{fmtLong(nxt.event_date)} · {nxt.event_time}</span><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><MapPin size={14} />{nxt.venue}</span></div>
+        </div>
+        <div style={{ padding: '18px 24px 22px' }}>
+          <SectionTitle>Who’s confirmed</SectionTitle>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>{Object.entries(nA).map(([rid, resp]) => { const m = R.find(x => x.id === +rid); if (!m) return null; const c = RESP[resp] || RESP.pending; return <div key={rid} title={`${m.name}: ${resp}`} style={{ width: 38, height: 38, borderRadius: '50%', background: c.bg, color: c.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, border: `2px solid ${c.bd}` }}>{ini(m.name)}</div> })}</div>
+          <div style={{ display: 'flex', gap: 8 }}>{['yes', 'pending', 'no'].map(r => { const c = RESP[r]; const n = Object.values(nA).filter(x => x === r).length; return <div key={r} style={{ flex: 1, textAlign: 'center', background: c.bg, color: c.fg, borderRadius: 10, padding: '8px 0', fontSize: 12.5, fontWeight: 700 }}>{n} {r}</div> })}</div>
+        </div>
+      </div> : <div className="card" style={{ padding: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a99fc8' }}>No upcoming performances scheduled.</div>}
+
+      <div className="card" style={{ padding: 22 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}><SectionTitle>The Four Voices</SectionTitle><button onClick={() => nav('quartet')} style={{ fontSize: 12, color: '#7C3AED', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>Manage <Arrow size={14} /></button></div>
+        {['Soprano', 'Alto', 'Tenor', 'Bass'].map(part => { const pc = VP[part]; const m = aR.filter(r => r.voice_part === part); const lead = m.find(r => r.singer_type === 'member') || m[0]; return <div key={part} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 0', borderBottom: '1px solid #f4f0fb' }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: pc.grad, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, boxShadow: `0 4px 10px ${pc.fg}33` }}>{part[0]}</div>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{part}</div><div style={{ fontSize: 12, color: '#a99fc8' }}>{lead ? lead.name : <span style={{ color: '#EF4444' }}>No singer assigned</span>}</div></div>
+          {m.length > 1 && <Pill bg={pc.bg} fg={pc.fg}>+{m.length - 1}</Pill>}
+        </div> })}
       </div>
     </div>
-  </div>;
+  </div>
 }
 
-function Rost({R,rf,sRf,shS,sShS,sSng,sSSng,addS,togAct,togTy,E,aM}){
-  const fl=['all','member','guest','inactive'];
-  const fd=R.filter(r=>{if(rf==='inactive')return!r.active;if(rf==='all')return r.active;return r.singer_type===rf&&r.active});
-
-  if(sSng){const s=R.find(r=>r.id===sSng);if(!s)return null;const pc=PC[s.voice_part]||PC.Soprano;
-    return<div style={{animation:'fadeUp .3s ease'}}>
-      <button onClick={()=>sSSng(null)} style={{color:'#3B7C8C',fontSize:13,fontWeight:600,marginBottom:20}}>← Back</button>
-      <div style={{background:'#fff',borderRadius:12,padding:28,border:'1px solid #eae9e4'}}>
-        <div style={{display:'flex',gap:20,marginBottom:24}}>
-          <div style={{width:64,height:64,borderRadius:'50%',background:pc.bg,color:pc.fg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:700,border:s.singer_type==='guest'?`3px dashed ${pc.bd}`:`3px solid ${pc.bd}`,flexShrink:0}}>{ini(s.name)}</div>
-          <div><div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}><h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:600}}>{s.name}</h2><span style={{padding:'3px 10px',borderRadius:5,fontSize:10.5,fontWeight:700,background:s.singer_type==='member'?'#E8F5E9':'#FFF3E0',color:s.singer_type==='member'?'#2E7D32':'#E65100',textTransform:'capitalize'}}>{s.singer_type}</span>{!s.active&&<span style={{padding:'3px 10px',borderRadius:5,fontSize:10.5,fontWeight:700,background:'#FFEBEE',color:'#C62828'}}>Inactive</span>}</div>
-            <div style={{display:'flex',gap:6}}><span style={{padding:'2px 8px',borderRadius:4,fontSize:11,fontWeight:600,background:pc.bg,color:pc.fg}}>{s.voice_part}</span><span style={{fontSize:12.5,color:'#aaa'}}>Joined {fmt(s.joined_date)}</span></div></div>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24,padding:18,background:'#F5F4F0',borderRadius:10}}><div style={{fontSize:13.5}}>{s.phone||'No phone'}</div><div style={{fontSize:13.5}}>{s.email||'No email'}</div></div>
-        <div style={{display:'flex',gap:8}}><button onClick={()=>togAct(s.id)} style={{padding:'8px 16px',borderRadius:7,border:'1px solid #ddd',background:'#fff',fontSize:12.5,fontWeight:600}}>{s.active?'Mark Inactive':'Mark Active'}</button><button onClick={()=>togTy(s.id)} style={{padding:'8px 16px',borderRadius:7,border:'1px solid #ddd',background:'#fff',fontSize:12.5,fontWeight:600}}>→ {s.singer_type==='member'?'Guest':'Member'}</button></div>
-      </div></div>}
-
-  return<div style={{animation:'fadeUp .4s ease'}}>
-    <div style={{display:'flex',justifyContent:'space-between',marginBottom:24}}>
-      <div><h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:600}}>Roster</h1><p style={{color:'#888',marginTop:4,fontSize:13.5}}>{R.filter(r=>r.active&&r.singer_type==='member').length} members, {R.filter(r=>r.active&&r.singer_type==='guest').length} guests</p></div>
-      <button onClick={()=>sShS(true)} style={{padding:'9px 16px',borderRadius:9,background:'#1a1a1a',color:'#fff',fontSize:12.5,fontWeight:600}}>+ Add Singer</button></div>
-    <div style={{display:'flex',gap:3,marginBottom:20,background:'#fff',borderRadius:9,padding:3,border:'1px solid #e0dfda',width:'fit-content'}}>{fl.map(f=><button key={f} onClick={()=>sRf(f)} style={{padding:'6px 14px',borderRadius:6,fontSize:12,fontWeight:500,background:rf===f?'#1a1a1a':'transparent',color:rf===f?'#fff':'#888',textTransform:'capitalize'}}>{f==='all'?'All':f==='inactive'?'Inactive':`${f}s`}</button>)}</div>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:10}}>{fd.map(s=>{const pc=PC[s.voice_part]||PC.Soprano;return<div key={s.id} onClick={()=>sSSng(s.id)} style={{background:'#fff',borderRadius:11,padding:16,border:'1px solid #eae9e4',cursor:'pointer',display:'flex',alignItems:'center',gap:14,opacity:s.active?1:.55}}>
-      <div style={{width:44,height:44,borderRadius:'50%',background:pc.bg,color:pc.fg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,border:s.singer_type==='guest'?`2px dashed ${pc.bd}`:`2px solid ${pc.bd}`,flexShrink:0}}>{ini(s.name)}</div>
-      <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{s.name}</div><div style={{display:'flex',gap:6}}><span style={{fontSize:11,fontWeight:600,padding:'1px 6px',borderRadius:4,background:pc.bg,color:pc.fg}}>{s.voice_part}</span><span style={{fontSize:11,fontWeight:600,padding:'1px 6px',borderRadius:4,background:s.singer_type==='member'?'#E8F5E9':'#FFF3E0',color:s.singer_type==='member'?'#2E7D32':'#E65100'}}>{s.singer_type}</span></div></div>
-      <span style={{color:'#ccc',fontSize:18}}>›</span></div>})}</div>
-    {shS&&<FModal t="Add Singer" onX={()=>sShS(false)} fs={[{k:'name',l:'Name *',rq:1},{k:'phone',l:'Phone'},{k:'email',l:'Email'},{k:'voicePart',l:'Voice Part',ty:'sel',opts:['Soprano','Alto','Tenor','Bass'],df:'Soprano'},{k:'type',l:'Type',ty:'tog',opts:['member','guest'],df:'guest'}]} onOk={addS}/>}
-  </div>;
+/* ---------- quartet (roster) ---------- */
+function Quartet({ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }) {
+  const filt = [['all', 'Everyone'], ['member', 'Core Quartet'], ['guest', 'Guests']]
+  const showCore = rf === 'all' || rf === 'member'
+  const showGuest = rf === 'all' || rf === 'guest'
+  const Card = ({ s }) => { const pc = VP[s.voice_part] || VP.Soprano; return <div className="card lift" onClick={() => sSSng(s.id)} style={{ padding: 17, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, borderTop: `3px solid ${pc.fg}` }}>
+    <Avatar name={s.name} part={s.voice_part} type={s.singer_type} size={48} />
+    <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{s.name}</div><div style={{ display: 'flex', gap: 6 }}><Pill bg={pc.bg} fg={pc.fg}>{s.voice_part}</Pill>{s.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">Guest</Pill>}</div></div>
+    <span style={{ color: '#d6cdec' }}><Arrow size={18} /></span>
+  </div> }
+  return <div className="fade">
+    <Header title="The Quartet" sub={`${core.length} core voices${guests.length ? ` · ${guests.length} guest singers` : ''}`} action={{ label: 'Add Singer', on: () => sShS(true) }} />
+    <Filter opts={filt} val={rf} set={sRf} />
+    {showCore && <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 12px' }}><Sparkle size={16} color="#7C3AED" /><span style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>Core Quartet</span></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(270px,1fr))', gap: 12, marginBottom: guests.length && showGuest ? 28 : 0 }}>{core.map(s => <Card key={s.id} s={s} />)}{!core.length && <Empty>No core members yet.</Empty>}</div>
+    </>}
+    {showGuest && <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 12px' }}><Users size={16} color="#D97706" /><span style={{ fontSize: 13, fontWeight: 800, color: '#D97706' }}>Guest Singers</span></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(270px,1fr))', gap: 12 }}>{guests.map(s => <Card key={s.id} s={s} />)}{!guests.length && <Empty>No guest singers right now — add one when the quartet expands to eight.</Empty>}</div>
+    </>}
+  </div>
 }
 
-function Mus({M,q,sQ,mf,sMf,togSync,tMB,sN,sMB}){
-  const cats=['all',...new Set(M.map(s=>s.category))];
-  const fd=M.filter(s=>(s.title.toLowerCase().includes(q.toLowerCase())||(s.arranger||'').toLowerCase().includes(q.toLowerCase()))&&(mf==='all'||s.category===mf));
-  return<div style={{animation:'fadeUp .4s ease'}}>
-    <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:600,marginBottom:4}}>Music Library</h1>
-    <p style={{color:'#888',fontSize:13.5,marginBottom:24}}>{M.length} arrangements ({tMB} MB) · {sN} on iPads ({sMB} MB/device)</p>
-    <div style={{background:'#fff',borderRadius:12,padding:18,border:'1px solid #eae9e4',marginBottom:18}}>
-      <div style={{display:'flex',justifyContent:'space-between',marginBottom:10}}><span style={{fontSize:12.5,fontWeight:600,color:'#666'}}>iPad Storage</span><span style={{fontSize:12.5,color:'#aaa'}}>{sMB} MB on each device</span></div>
-      <div style={{height:7,borderRadius:4,background:'#f0efeb',overflow:'hidden'}}><div style={{height:'100%',width:`${(parseFloat(sMB)/parseFloat(tMB))*100}%`,borderRadius:4,background:'linear-gradient(90deg,#3B7C8C,#5BA3B3)',transition:'width .5s'}}/></div>
+function SingerDetail({ R, sSng, sSSng, togAct, togTy }) {
+  const s = R.find(r => r.id === sSng); if (!s) return null
+  const pc = VP[s.voice_part] || VP.Soprano
+  return <Modal onX={() => sSSng(null)}>
+    <div style={{ background: pc.grad, height: 86, position: 'relative' }}><div style={{ position: 'absolute', right: 16, top: 14, opacity: .25, color: '#fff' }}><Note size={56} /></div></div>
+    <div style={{ padding: '0 26px 26px', marginTop: -34 }}>
+      <Avatar name={s.name} part={s.voice_part} type={s.singer_type} size={68} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}><h2 className="serif" style={{ fontSize: 23, fontWeight: 700 }}>{s.name}</h2>{!s.active && <Pill bg="#FEE2E2" fg="#B91C1C">Inactive</Pill>}</div>
+      <div style={{ display: 'flex', gap: 7, marginTop: 8 }}><Pill bg={pc.bg} fg={pc.fg}>{s.voice_part}</Pill><Pill bg={s.singer_type === 'member' ? '#EDE9FE' : '#FEF3C7'} fg={s.singer_type === 'member' ? '#7C3AED' : '#B45309'}>{s.singer_type === 'member' ? 'Core Quartet' : 'Guest Singer'}</Pill></div>
+      <div style={{ display: 'grid', gap: 10, margin: '20px 0', background: '#faf8ff', borderRadius: 13, padding: 16 }}>
+        <Row ic={<Phone size={16} />}>{s.phone || 'No phone on file'}</Row>
+        <Row ic={<Mail size={16} />}>{s.email || 'No email on file'}</Row>
+        <Row ic={<Clock size={16} />}>Joined {fmt(s.joined_date)}</Row>
+      </div>
+      <div style={{ display: 'flex', gap: 9 }}>
+        <Btn ghost onClick={() => togAct(s.id)}>{s.active ? 'Mark Inactive' : 'Reactivate'}</Btn>
+        <Btn ghost onClick={() => togTy(s.id)}>{s.singer_type === 'member' ? '→ Make Guest' : '→ Make Core'}</Btn>
+      </div>
     </div>
-    <div style={{display:'flex',gap:10,marginBottom:18}}>
-      <input value={q} onChange={e=>sQ(e.target.value)} placeholder="Search..." style={{flex:1,padding:'9px 12px',borderRadius:9,border:'1px solid #ddd',fontSize:13.5,background:'#fff'}}/>
-      <div style={{display:'flex',gap:3,background:'#fff',borderRadius:9,padding:3,border:'1px solid #e0dfda'}}>{cats.map(c=><button key={c} onClick={()=>sMf(c)} style={{padding:'6px 12px',borderRadius:6,fontSize:11.5,fontWeight:500,background:mf===c?'#1a1a1a':'transparent',color:mf===c?'#fff':'#888'}}>{c==='all'?'All':c}</button>)}</div>
-    </div>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:10}}>{fd.map(s=><div key={s.id} style={{background:'#fff',borderRadius:10,padding:14,border:'1px solid #eae9e4',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-      <div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{s.title}</div><div style={{fontSize:11.5,color:'#aaa',marginBottom:4}}>{s.arranger}</div><div style={{fontSize:10.5,color:'#bbb'}}>{(s.voice_parts||[]).join(', ')} · {s.pages}pg · {s.file_size_mb}MB</div></div>
-      <button onClick={()=>togSync(s.id)} style={{padding:'7px 12px',borderRadius:7,fontSize:11.5,fontWeight:600,background:s.cloud_only?'#f0efeb':'#E8F5E9',color:s.cloud_only?'#888':'#2E7D32'}}>{s.cloud_only?'Cloud':'iPad'}</button>
-    </div>)}</div>
-  </div>;
+  </Modal>
 }
 
-function Leads({I,lf,sLf,shI,sShI,sInq,sSInq,updIS,logFU,addI}){
-  const sts=['all','new','contacted','confirmed','lost'];
-  const fd=I.filter(i=>lf==='all'||i.status===lf);
-  const od=I.filter(i=>i.next_follow_up&&new Date(i.next_follow_up+'T12:00:00')<new Date());
+/* ---------- music ---------- */
+function Music({ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM }) {
+  const cats = ['all', ...new Set(M.map(s => s.category))]
+  const fd = M.filter(s => (s.title.toLowerCase().includes(q.toLowerCase()) || (s.arranger || '').toLowerCase().includes(q.toLowerCase())) && (mf === 'all' || s.category === mf))
+  const pct = Math.min(100, (parseFloat(sMB) / Math.max(parseFloat(tMB), 1)) * 100)
+  return <div className="fade">
+    <Header title="Music Library" sub={`${M.length} arrangements · ${tMB} MB in the cloud`} action={{ label: 'Upload Arrangement', on: () => sShM(true), icon: <Plus size={16} /> }} />
+    <div className="card" style={{ padding: 0, marginBottom: 18, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      <div style={{ padding: 22, background: G.teal, color: '#fff', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', right: -8, bottom: -8, opacity: .18 }}><Tablet size={86} /></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}><Tablet size={22} /><span style={{ fontWeight: 800, fontSize: 14 }}>iPad Sync</span></div>
+        <div style={{ fontSize: 30, fontWeight: 800 }}>{sN}<span style={{ fontSize: 15, fontWeight: 600, opacity: .8 }}> / {M.length}</span></div>
+        <div style={{ fontSize: 12.5, opacity: .9, marginBottom: 12 }}>arrangements on every singer’s iPad</div>
+        <div style={{ height: 8, borderRadius: 5, background: 'rgba(255,255,255,.25)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${pct}%`, background: '#fff', borderRadius: 5, transition: 'width .6s' }} /></div>
+        <div style={{ fontSize: 11.5, opacity: .85, marginTop: 7 }}>{sMB} MB stored per device</div>
+      </div>
+      <div style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><IconChip grad={G.green} size={38}><Cloud size={18} /></IconChip><div><div style={{ fontSize: 13.5, fontWeight: 700 }}>One library, every iPad</div><div style={{ fontSize: 12, color: '#a99fc8' }}>Toggle a piece to push or pull it from devices instantly — no more loading each iPad by hand.</div></div></div>
+        <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#6b7280', flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: G.green, display: 'inline-block' }} /> On iPads</span><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#cbd5e1', display: 'inline-block' }} /> Cloud only</span></div>
+      </div>
+    </div>
+    <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ flex: 1, minWidth: 200, position: 'relative' }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#b6abd4' }}><Search size={17} /></span><input value={q} onChange={e => sQ(e.target.value)} placeholder="Search by title or arranger…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e6dffa', fontSize: 13.5, background: '#fff' }} /></div>
+      <Filter opts={cats.map(c => [c, c === 'all' ? 'All' : c])} val={mf} set={sMf} bare />
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(310px,1fr))', gap: 12 }}>{fd.map(s => { const onPad = !s.cloud_only; return <div key={s.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 13 }}>
+      <IconChip grad={onPad ? G.green : 'linear-gradient(135deg,#cbd5e1,#94a3b8)'} size={42}>{onPad ? <Tablet size={19} /> : <Cloud size={19} />}</IconChip>
+      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div><div style={{ fontSize: 12, color: '#a99fc8', marginBottom: 4 }}>{s.arranger || 'Traditional'}</div><div style={{ fontSize: 11, color: '#bbb1d6' }}>{s.category} · {s.pages}pg · {s.file_size_mb}MB</div></div>
+      <button onClick={() => togSync(s.id)} style={{ padding: '8px 13px', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, background: onPad ? '#D1FAE5' : '#f1ecfb', color: onPad ? '#047857' : '#7a6fa0' }}>{onPad ? <><Check size={14} />iPad</> : <><Cloud size={14} />Cloud</>}</button>
+    </div> })}{!fd.length && <Empty>No arrangements match your search.</Empty>}</div>
+  </div>
+}
 
-  if(sInq){const inq=I.find(i=>i.id===sInq);if(!inq)return null;
-    return<div style={{animation:'fadeUp .3s ease'}}>
-      <button onClick={()=>sSInq(null)} style={{color:'#3B7C8C',fontSize:13,fontWeight:600,marginBottom:20}}>← Back</button>
-      <div style={{background:'#fff',borderRadius:12,padding:26,border:'1px solid #eae9e4'}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:22}}><div><h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:600}}>{inq.contact_name}</h2><div style={{fontSize:13.5,color:'#888',marginTop:3}}>{inq.organization}</div></div><Bd s={inq.status}/></div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:22,padding:18,background:'#F5F4F0',borderRadius:10}}>
-          <div><div style={{fontSize:10.5,color:'#aaa',textTransform:'uppercase',fontWeight:600,marginBottom:3}}>Date</div><div style={{fontSize:14,fontWeight:600}}>{inq.event_date?fmt(inq.event_date):'TBD'}</div></div>
-          <div><div style={{fontSize:10.5,color:'#aaa',textTransform:'uppercase',fontWeight:600,marginBottom:3}}>Type</div><div style={{fontSize:14,fontWeight:600}}>{inq.event_type}</div></div>
-          <div><div style={{fontSize:10.5,color:'#aaa',textTransform:'uppercase',fontWeight:600,marginBottom:3}}>Donation</div><div style={{fontSize:14,fontWeight:600,color:'#6B5CA5'}}>{$(inq.expected_donation)}</div></div>
+/* ---------- bookings (leads) ---------- */
+function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail }) {
+  const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
+  const fd = I.filter(i => lf === 'all' || i.status === lf)
+  const od = I.filter(i => i.status !== 'lost' && i.next_follow_up && new Date(i.next_follow_up + 'T12:00:00') < new Date())
+
+  if (sInq) { const inq = I.find(i => i.id === sInq); if (!inq) return null; const isOD = inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date()
+    return <div className="fade">
+      <BackBtn onClick={() => sSInq(null)} />
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ background: G.purple, padding: '24px 26px', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div><h2 className="serif" style={{ fontSize: 24, fontWeight: 700 }}>{inq.contact_name}</h2><div style={{ fontSize: 13.5, opacity: .9, marginTop: 3 }}>{inq.organization}</div></div>
+          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 24, fontWeight: 800 }}>{$(inq.expected_donation)}</div><div style={{ marginTop: 5 }}><Badge s={inq.status} /></div></div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:22}}><div style={{fontSize:13.5}}>{inq.phone||'No phone'}</div><div style={{fontSize:13.5}}>{inq.email||'No email'}</div></div>
-        {inq.notes&&<div style={{marginBottom:22,fontSize:13.5,lineHeight:1.6,color:'#666',background:'#F5F4F0',padding:14,borderRadius:9}}>{inq.notes}</div>}
-        <div style={{marginBottom:22,padding:18,background:'#F5F4F0',borderRadius:10}}>
-          <div style={{fontSize:10.5,color:'#aaa',textTransform:'uppercase',fontWeight:600,marginBottom:10}}>Follow-up</div>
-          <div style={{display:'flex',gap:20,fontSize:12.5,flexWrap:'wrap'}}>
-            <span><span style={{color:'#aaa'}}>Created: </span>{fmt(inq.created_at?.split('T')[0])}</span>
-            <span><span style={{color:'#aaa'}}>Last: </span>{inq.last_follow_up?fmt(inq.last_follow_up):'None'}</span>
-            <span><span style={{color:'#aaa'}}>Next: </span><span style={{color:inq.next_follow_up&&new Date(inq.next_follow_up+'T12:00:00')<new Date()?'#C62828':'inherit'}}>{inq.next_follow_up?fmt(inq.next_follow_up):'N/A'}</span></span>
+        <div style={{ padding: 26 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
+            <Stat ic={<Calendar size={16} />} l="Date" v={inq.event_date ? fmt(inq.event_date) : 'TBD'} />
+            <Stat ic={<Sparkle size={16} />} l="Occasion" v={inq.event_type} />
+            <Stat ic={<Phone size={16} />} l="Phone" v={inq.phone || '—'} />
           </div>
-        </div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          <button onClick={()=>logFU(inq.id)} style={{padding:'9px 16px',borderRadius:7,background:'#3B7C8C',color:'#fff',fontSize:12.5,fontWeight:600}}>Log Follow-up</button>
-          {inq.status==='new'&&<button onClick={()=>updIS(inq.id,'contacted')} style={{padding:'9px 16px',borderRadius:7,border:'1px solid #ddd',background:'#fff',fontSize:12.5,fontWeight:600}}>Mark Contacted</button>}
-          {inq.status==='contacted'&&<button onClick={()=>updIS(inq.id,'confirmed')} style={{padding:'9px 16px',borderRadius:7,background:'#2E7D32',color:'#fff',fontSize:12.5,fontWeight:600}}>Confirm</button>}
-          {inq.status!=='lost'&&inq.status!=='confirmed'&&<button onClick={()=>updIS(inq.id,'lost')} style={{padding:'9px 16px',borderRadius:7,border:'1px solid #FFCDD2',background:'#fff',color:'#C62828',fontSize:12.5,fontWeight:600}}>Lost</button>}
-        </div>
-      </div></div>}
-
-  return<div style={{animation:'fadeUp .4s ease'}}>
-    <div style={{display:'flex',justifyContent:'space-between',marginBottom:24}}>
-      <div><h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:600}}>Leads & Inquiries</h1><p style={{color:'#888',marginTop:4,fontSize:13.5}}>Track booking interest.</p></div>
-      <button onClick={()=>sShI(true)} style={{padding:'9px 16px',borderRadius:9,background:'#1a1a1a',color:'#fff',fontSize:12.5,fontWeight:600}}>+ New Inquiry</button></div>
-    {od.length>0&&<div style={{background:'#FFF3E0',border:'1px solid #FFE0B2',borderRadius:10,padding:14,marginBottom:18}}><span style={{fontWeight:600,color:'#E65100'}}>{od.length} overdue follow-up{od.length>1?'s':''}: </span><span style={{color:'#E65100',opacity:.8}}>{od.map(i=>i.contact_name).join(', ')}</span></div>}
-    <div style={{display:'flex',gap:3,marginBottom:18,background:'#fff',borderRadius:9,padding:3,border:'1px solid #e0dfda',width:'fit-content'}}>{sts.map(s=><button key={s} onClick={()=>sLf(s)} style={{padding:'6px 12px',borderRadius:6,fontSize:11.5,fontWeight:500,background:lf===s?'#1a1a1a':'transparent',color:lf===s?'#fff':'#888',textTransform:'capitalize'}}>{s}</button>)}</div>
-    <div style={{display:'flex',flexDirection:'column',gap:8}}>{fd.map(inq=>{const isOD=inq.next_follow_up&&new Date(inq.next_follow_up+'T12:00:00')<new Date();return<div key={inq.id} onClick={()=>sSInq(inq.id)} style={{background:'#fff',borderRadius:10,padding:16,border:isOD?'1px solid #FFCDD2':'1px solid #eae9e4',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-      <div><div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}><span style={{fontSize:14,fontWeight:600}}>{inq.contact_name}</span><Bd s={inq.status}/>{isOD&&<span style={{fontSize:10.5,fontWeight:600,color:'#C62828',background:'#FFEBEE',padding:'2px 7px',borderRadius:4}}>Overdue</span>}</div><div style={{fontSize:12.5,color:'#888'}}>{inq.organization} · {inq.event_type}</div></div>
-      <div style={{textAlign:'right'}}><div style={{fontSize:14,fontWeight:700,color:'#6B5CA5'}}>{$(inq.expected_donation)}</div><div style={{fontSize:11.5,color:'#aaa'}}>{inq.event_date?fmt(inq.event_date):'TBD'}</div></div>
-    </div>})}</div>
-    {shI&&<FModal t="New Inquiry" onX={()=>sShI(false)} fs={[{k:'contact',l:'Contact *',rq:1},{k:'org',l:'Organization *',rq:1},{k:'phone',l:'Phone'},{k:'email',l:'Email'},{k:'eventDate',l:'Event Date',ty:'date'},{k:'eventType',l:'Type',ty:'sel',opts:['Luncheon','Sunday Service','Club Meeting','Holiday Celebration','Annual Gala','Concert','Memorial','Other'],df:'Luncheon'},{k:'expectedDonation',l:'Donation ($)',ty:'num',df:0},{k:'notes',l:'Notes',ty:'area'}]} onOk={addI}/>}
-  </div>;
-}
-
-function Evts({E,sEv,sSEv,updR,M,R,aM,noti}){
-  if(sEv){const ev=E.find(e=>e.id===sEv);if(!ev)return null;const ea=aM[ev.id]||{};const yc=Object.values(ea).filter(r=>r==='yes').length;const pc=Object.values(ea).filter(r=>r==='pending').length;
-    return<div style={{animation:'fadeUp .3s ease'}}>
-      <button onClick={()=>sSEv(null)} style={{color:'#3B7C8C',fontSize:13,fontWeight:600,marginBottom:20}}>← Back</button>
-      <div style={{background:'#fff',borderRadius:12,padding:26,border:'1px solid #eae9e4'}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:18}}>
-          <div><h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:600}}>{ev.title}</h2><div style={{fontSize:13.5,color:'#888',marginTop:3}}>{fmt(ev.event_date)} at {ev.event_time} · {ev.venue}</div></div>
-          <div style={{textAlign:'right'}}><div style={{fontSize:20,fontWeight:700,color:'#6B5CA5'}}>{$(ev.donation)}</div><Bd s={ev.status}/></div>
-        </div>
-        <div style={{background:yc>=5?'#E8F5E9':yc+pc>=5?'#FFF8E1':'#FFEBEE',borderRadius:10,padding:14,marginBottom:22}}>
-          <div style={{fontSize:13,fontWeight:600,color:yc>=5?'#2E7D32':yc+pc>=5?'#F57F17':'#C62828'}}>{yc>=5?`${yc} confirmed. Enough singers.`:yc+pc>=5?`${yc} confirmed, ${pc} pending.`:`Only ${yc} confirmed. Need 5+.`}</div>
-        </div>
-        <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#aaa',marginBottom:12}}>Availability</div>
-        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:22}}>{Object.keys(ea).map(rid=>{const m=R.find(x=>x.id===+rid);if(!m)return null;const resp=ea[rid];const pc2=PC[m.voice_part]||PC.Soprano;
-          return<div key={rid} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',background:'#F5F4F0',borderRadius:9}}>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <div style={{width:36,height:36,borderRadius:'50%',background:resp==='yes'?'#E8F5E9':resp==='no'?'#FFEBEE':'#FFF8E1',color:resp==='yes'?'#2E7D32':resp==='no'?'#C62828':'#F57F17',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,border:`2px solid ${resp==='yes'?'#A5D6A7':resp==='no'?'#EF9A9A':'#FFE082'}`}}>{ini(m.name)}</div>
-              <div><div style={{fontSize:13.5,fontWeight:500}}>{m.name}</div><div style={{display:'flex',gap:5}}><span style={{fontSize:10.5,fontWeight:600,padding:'1px 5px',borderRadius:3,background:pc2.bg,color:pc2.fg}}>{m.voice_part}</span>{m.singer_type==='guest'&&<span style={{fontSize:10.5,fontWeight:600,padding:'1px 5px',borderRadius:3,background:'#FFF3E0',color:'#E65100'}}>guest</span>}</div></div>
+          {inq.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf8ff', padding: 15, borderRadius: 12, marginBottom: 20 }}>{inq.notes}</div>}
+          <div style={{ background: isOD ? '#FEF2F2' : '#faf8ff', border: `1px solid ${isOD ? '#FECACA' : '#efe9fa'}`, borderRadius: 13, padding: 16, marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><SectionTitle>Follow-up</SectionTitle>{isOD && <Pill bg="#FEE2E2" fg="#B91C1C">Overdue</Pill>}</div>
+            <div style={{ display: 'flex', gap: 22, fontSize: 12.5, flexWrap: 'wrap', color: '#6b7280' }}>
+              <span>Created <b style={{ color: '#1f2937' }}>{fmt(inq.created_at?.split('T')[0])}</b></span>
+              <span>Last <b style={{ color: '#1f2937' }}>{inq.last_follow_up ? fmt(inq.last_follow_up) : 'never'}</b></span>
+              <span>Next <b style={{ color: isOD ? '#B91C1C' : '#1f2937' }}>{inq.next_follow_up ? fmt(inq.next_follow_up) : 'N/A'}</b></span>
             </div>
-            <div style={{display:'flex',gap:5}}>{['yes','pending','no'].map(r=><button key={r} onClick={()=>updR(ev.id,+rid,r)} style={{padding:'5px 11px',borderRadius:6,fontSize:11.5,fontWeight:600,background:resp===r?(r==='yes'?'#2E7D32':r==='no'?'#C62828':'#F57F17'):'#e8e7e2',color:resp===r?'#fff':'#aaa'}}>{r==='yes'?'Yes':r==='no'?'No':'Pending'}</button>)}</div>
-          </div>})}</div>
-        <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#aaa',marginBottom:12}}>Songs</div>
-        <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:22}}>{(ev.songs_planned||[]).map((sid,i)=>{const s=M.find(x=>x.id===sid);return s?<div key={sid} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',background:'#F5F4F0',borderRadius:7}}><span style={{fontSize:11.5,fontWeight:700,color:'#bbb',width:18}}>{i+1}</span><span style={{fontSize:13.5,fontWeight:500}}>{s.title}</span><span style={{marginLeft:'auto',fontSize:10.5,color:s.cloud_only?'#aaa':'#2E7D32'}}>{s.cloud_only?'Cloud':'iPad'}</span></div>:null})}</div>
-        <button onClick={()=>noti('Availability request sent')} style={{padding:'9px 16px',borderRadius:7,background:'#3B7C8C',color:'#fff',fontSize:12.5,fontWeight:600}}>Send Availability Request</button>
-      </div></div>}
-
-  return<div style={{animation:'fadeUp .4s ease'}}>
-    <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:600,marginBottom:4}}>Events & Availability</h1>
-    <p style={{color:'#888',fontSize:13.5,marginBottom:24}}>Check availability before committing.</p>
-    <div style={{display:'flex',flexDirection:'column',gap:10}}>{E.map(ev=>{const ea=aM[ev.id]||{};const yc=Object.values(ea).filter(r=>r==='yes').length;const pc=Object.values(ea).filter(r=>r==='pending').length;const tot=Object.keys(ea).length||1;const d=dU(ev.event_date);
-      return<div key={ev.id} onClick={()=>sSEv(ev.id)} style={{background:'#fff',borderRadius:12,padding:18,border:'1px solid #eae9e4',cursor:'pointer'}}>
-        <div style={{display:'flex',justifyContent:'space-between'}}>
-          <div style={{flex:1}}><div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}><span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:600}}>{ev.title}</span><Bd s={ev.status}/></div>
-            <div style={{fontSize:12.5,color:'#888',marginBottom:10}}>{fmt(ev.event_date)} at {ev.event_time} · {ev.venue}</div>
-            <div style={{display:'flex',alignItems:'center',gap:10}}><div style={{flex:1,maxWidth:180,height:5,borderRadius:3,background:'#f0efeb',overflow:'hidden',display:'flex'}}><div style={{width:`${(yc/tot)*100}%`,background:'#4CAF50'}}/><div style={{width:`${(pc/tot)*100}%`,background:'#FFB74D'}}/></div><span style={{fontSize:11.5,color:'#888'}}>{yc}/{tot} yes</span>{pc>0&&<span style={{fontSize:11.5,color:'#F57F17'}}>{pc} pending</span>}</div>
           </div>
-          <div style={{textAlign:'right'}}><div style={{fontSize:17,fontWeight:700,color:'#6B5CA5'}}>{$(ev.donation)}</div><div style={{fontSize:11.5,color:d<=7?'#C62828':'#aaa',fontWeight:d<=7?600:400}}>{d>0?`${d}d`:'Past'}</div></div>
-        </div></div>})}</div>
-  </div>;
+          <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
+            <Btn grad={G.purple} onClick={() => sEmail({ lead: inq })}><Mail size={16} />Compose Email</Btn>
+            <Btn ghost onClick={() => logFU(inq.id)}><Check size={16} />Log Follow-up</Btn>
+            {inq.status === 'new' && <Btn ghost onClick={() => updIS(inq.id, 'contacted')}>Mark Contacted</Btn>}
+            {inq.status === 'contacted' && <Btn grad={G.green} onClick={() => updIS(inq.id, 'confirmed')}><Check size={16} />Confirm</Btn>}
+            {inq.status !== 'lost' && inq.status !== 'confirmed' && <Btn ghost danger onClick={() => updIS(inq.id, 'lost')}>Mark Lost</Btn>}
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  return <div className="fade">
+    <Header title="Bookings" sub="Track every inquiry from first hello to confirmed performance." action={{ label: 'New Inquiry', on: () => sShI(true) }} />
+    {od.length > 0 && <div style={{ background: G.amber, color: '#fff', borderRadius: 14, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 11, boxShadow: '0 8px 22px rgba(245,158,11,.25)' }}><Bell size={20} /><div style={{ fontSize: 13.5 }}><b>{od.length} overdue follow-up{od.length > 1 ? 's' : ''}:</b> {od.map(i => i.contact_name).join(', ')}</div></div>}
+    <Filter opts={sts} val={lf} set={sLf} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{fd.map(inq => { const isOD = inq.status !== 'lost' && inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date(); return <div key={inq.id} className="card lift" onClick={() => sSInq(inq.id)} style={{ padding: 17, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: isOD ? '4px solid #FB7185' : '4px solid transparent' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <IconChip grad={inq.status === 'confirmed' ? G.green : inq.status === 'lost' ? 'linear-gradient(135deg,#cbd5e1,#94a3b8)' : G.purple} size={44}><Mail size={19} /></IconChip>
+        <div><div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}><span style={{ fontSize: 15, fontWeight: 700 }}>{inq.contact_name}</span><Badge s={inq.status} />{isOD && <Pill bg="#FEE2E2" fg="#B91C1C">Overdue</Pill>}</div><div style={{ fontSize: 12.5, color: '#a99fc8' }}>{inq.organization} · {inq.event_type}</div></div>
+      </div>
+      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 16, fontWeight: 800, color: '#7C3AED' }}>{$(inq.expected_donation)}</div><div style={{ fontSize: 11.5, color: '#a99fc8' }}>{inq.event_date ? fmt(inq.event_date) : 'TBD'}</div></div>
+    </div> })}{!fd.length && <Empty>No bookings in this view.</Empty>}</div>
+  </div>
 }
 
-function FModal({t,onX,fs,onOk}){
-  const gd=f=>f.df!==undefined?f.df:(f.ty==='num'?0:'');
-  const[fm,sFm]=useState(Object.fromEntries(fs.map(f=>[f.k,gd(f)])));
-  const up=(k,v)=>sFm(p=>({...p,[k]:v}));
-  const ok=fs.filter(f=>f.rq).every(f=>fm[f.k]);
-  const st={width:'100%',padding:'9px 12px',borderRadius:8,border:'1px solid #ddd',fontSize:13.5};
-  return<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.35)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999}} onClick={onX}>
-    <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:14,padding:26,width:450,maxHeight:'80vh',overflow:'auto'}}>
-      <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:20,marginBottom:18}}>{t}</h2>
-      <div style={{display:'grid',gap:12}}>{fs.map(f=>{
-        const lbl=<label style={{fontSize:11.5,fontWeight:600,color:'#666',marginBottom:4,display:'block'}}>{f.l}</label>;
-        if(f.ty==='sel')return<div key={f.k}>{lbl}<select style={st} value={fm[f.k]} onChange={e=>up(f.k,e.target.value)}>{f.opts.map(o=><option key={o}>{o}</option>)}</select></div>;
-        if(f.ty==='tog')return<div key={f.k}>{lbl}<div style={{display:'flex',gap:6}}>{f.opts.map(o=><button key={o} onClick={()=>up(f.k,o)} style={{flex:1,padding:'9px 0',borderRadius:8,fontSize:12.5,fontWeight:600,textTransform:'capitalize',border:fm[f.k]===o?'2px solid #1a1a1a':'1px solid #ddd',background:fm[f.k]===o?'#1a1a1a':'#fff',color:fm[f.k]===o?'#fff':'#777'}}>{o}</button>)}</div></div>;
-        if(f.ty==='area')return<div key={f.k}>{lbl}<textarea style={{...st,minHeight:70,resize:'vertical'}} value={fm[f.k]} onChange={e=>up(f.k,e.target.value)}/></div>;
-        if(f.ty==='date')return<div key={f.k}>{lbl}<input type="date" style={st} value={fm[f.k]} onChange={e=>up(f.k,e.target.value)}/></div>;
-        if(f.ty==='num')return<div key={f.k}>{lbl}<input type="number" style={st} value={fm[f.k]} onChange={e=>up(f.k,parseInt(e.target.value)||0)}/></div>;
-        return<div key={f.k}>{lbl}<input style={st} value={fm[f.k]} onChange={e=>up(f.k,e.target.value)}/></div>;
-      })}</div>
-      <div style={{display:'flex',gap:8,marginTop:20,justifyContent:'flex-end'}}>
-        <button onClick={onX} style={{padding:'9px 18px',borderRadius:8,border:'1px solid #ddd',background:'#fff',fontSize:12.5,fontWeight:600}}>Cancel</button>
-        <button onClick={()=>ok&&onOk(fm)} style={{padding:'9px 18px',borderRadius:8,background:'#1a1a1a',color:'#fff',fontSize:12.5,fontWeight:600,opacity:ok?1:.4}}>Save</button>
+/* ---------- events ---------- */
+function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
+  if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const ok = yc >= 4
+    return <div className="fade">
+      <BackBtn onClick={() => sSEv(null)} />
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ background: ok ? G.green : pc ? G.amber : 'linear-gradient(135deg,#F87171,#EF4444)', padding: '24px 26px', color: '#fff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div><h2 className="serif" style={{ fontSize: 24, fontWeight: 700 }}>{ev.title}</h2><div style={{ fontSize: 13.5, opacity: .92, marginTop: 4, display: 'flex', gap: 14, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Calendar size={14} />{fmtLong(ev.event_date)} · {ev.event_time}</span><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><MapPin size={14} />{ev.venue}</span></div></div>
+            <div style={{ textAlign: 'right' }}><div style={{ fontSize: 22, fontWeight: 800 }}>{$(ev.donation)}</div><div style={{ marginTop: 5 }}><Badge s={ev.status} /></div></div>
+          </div>
+          <div style={{ marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 11, padding: '11px 15px', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>{ok ? <><Check size={17} />{yc} confirmed — you have a full quartet!</> : <><Bell size={17} />{yc} confirmed{pc ? `, ${pc} pending` : ''} — need at least 4.</>}</div>
+        </div>
+        <div style={{ padding: 26 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}><SectionTitle>Singer Availability</SectionTitle><Btn small grad={G.amber} onClick={() => sEmail({ availability: ev })}><Send size={14} />Email Request</Btn></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 22 }}>{aR.map(m => { const pcv = VP[m.voice_part] || VP.Soprano; return <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 13px', background: '#faf8ff', borderRadius: 11 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><Avatar name={m.name} part={m.voice_part} type={m.singer_type} size={36} /><div><div style={{ fontSize: 13.5, fontWeight: 700 }}>{m.name}</div><div style={{ display: 'flex', gap: 5, marginTop: 2 }}><Pill bg={pcv.bg} fg={pcv.fg}>{m.voice_part}</Pill>{m.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">guest</Pill>}</div></div></div>
+            <div style={{ display: 'flex', gap: 5 }}>{['yes', 'pending', 'no'].map(r => { const c = RESP[r]; const on = (ea[m.id] || 'pending') === r; return <button key={r} onClick={() => updR(ev.id, m.id, r)} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 11.5, fontWeight: 700, textTransform: 'capitalize', background: on ? c.fg : '#eee', color: on ? '#fff' : '#9ca3af' }}>{r}</button> })}</div>
+          </div> })}</div>
+          <SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf8ff', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f1ecfb' : '#D1FAE5'} fg={s.cloud_only ? '#7a6fa0' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
+        </div>
       </div>
-    </div></div>;
+    </div>
+  }
+
+  return <div className="fade">
+    <Header title="Events" sub="Confirm the quartet’s availability before you commit to a date." />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{E.map(ev => { const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pcn = Object.values(ea).filter(r => r === 'pending').length; const tot = aR.length || 1; const d = dU(ev.event_date); const ok = yc >= 4
+    return <div key={ev.id} className="card lift" onClick={() => sSEv(ev.id)} style={{ padding: 19, cursor: 'pointer', display: 'flex', gap: 18, alignItems: 'center' }}>
+      <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#a99fc8', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1f2937' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div></div>
+      <div style={{ width: 1, alignSelf: 'stretch', background: '#efe9fa' }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}><span className="serif" style={{ fontSize: 18, fontWeight: 700 }}>{ev.title}</span><Badge s={ev.status} /></div>
+        <div style={{ fontSize: 12.5, color: '#a99fc8', marginBottom: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} />{ev.event_time}</span><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{ev.venue}</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><div style={{ flex: 1, maxWidth: 220, height: 7, borderRadius: 4, background: '#f1ecfb', overflow: 'hidden', display: 'flex' }}><div style={{ width: `${(yc / tot) * 100}%`, background: G.green }} /><div style={{ width: `${(pcn / tot) * 100}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)' }} /></div><span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#047857' : '#6b7280' }}>{yc}/{tot} yes</span>{ok && <Pill bg="#D1FAE5" fg="#047857">Quartet ready</Pill>}</div>
+      </div>
+      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#7C3AED' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 ? '#EF4444' : '#a99fc8' }}>{d > 0 ? `${d} days` : 'Past'}</div></div>
+    </div> })}{!E.length && <Empty>No events scheduled.</Empty>}</div>
+  </div>
+}
+
+/* ---------- email composer ---------- */
+function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
+  const isAvail = !!email.availability
+  const lead = email.lead
+  const ev = email.availability
+  const defType = isAvail ? null : (lead.status === 'contacted' ? 'followup' : lead.status === 'confirmed' ? 'confirmation' : lead.status === 'lost' ? 'thanks' : 'outreach')
+  const [type, sType] = useState(defType)
+  const built = useMemo(() => isAvail ? buildAvailabilityEmail(ev) : buildEmail(type, lead), [type, isAvail, lead, ev])
+  const [subject, sSubject] = useState(built.subject)
+  const [body, sBody] = useState(built.text)
+  useEffect(() => { sSubject(built.subject); sBody(built.text) }, [built])
+
+  const recipients = isAvail ? aR.map(m => m.email).filter(Boolean).join(',') : (lead.email || '')
+  const copy = async (html) => {
+    try {
+      if (html && navigator.clipboard && navigator.clipboard.write) await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([built.html], { type: 'text/html' }), 'text/plain': new Blob([body], { type: 'text/plain' }) })])
+      else await navigator.clipboard.writeText(body)
+      noti(html ? 'Formatted email copied' : 'Email text copied')
+    } catch { noti('Copy unavailable — please select the text manually') }
+  }
+  const openMail = () => { window.location.href = mailto(recipients, subject, body); if (!isAvail && onLogged) onLogged(lead.id) }
+
+  return <Modal onX={() => sEmail(null)} wide>
+    <div style={{ background: isAvail ? G.amber : G.purple, padding: '20px 26px', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Mail size={24} /><div><div style={{ fontSize: 18, fontWeight: 800 }}>{isAvail ? 'Availability Request' : 'Compose Follow-up'}</div><div style={{ fontSize: 12.5, opacity: .9 }}>{isAvail ? `To the quartet · ${ev.title}` : `To ${lead.contact_name} · ${lead.organization}`}</div></div>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
+      <div style={{ padding: 22, overflowY: 'auto', borderRight: '1px solid #efe9fa' }}>
+        {!isAvail && <><SectionTitle>Template</SectionTitle><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>{Object.entries(TEMPLATES).map(([k, t]) => <button key={k} onClick={() => sType(k)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 11, border: type === k ? '2px solid #7C3AED' : '1px solid #e6dffa', background: type === k ? '#f5f0ff' : '#fff' }}><div style={{ fontSize: 12.5, fontWeight: 800, color: type === k ? '#7C3AED' : '#1f2937' }}>{t.label}</div><div style={{ fontSize: 10.5, color: '#a99fc8', marginTop: 2 }}>{t.hint}</div></button>)}</div></>}
+        <SectionTitle>Recipients</SectionTitle>
+        <div style={{ fontSize: 12.5, color: recipients ? '#4b5563' : '#EF4444', background: '#faf8ff', borderRadius: 10, padding: '9px 12px', marginBottom: 16, wordBreak: 'break-all' }}>{recipients || 'No email address on file'}</div>
+        <SectionTitle>Subject</SectionTitle>
+        <input value={subject} onChange={e => sSubject(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e6dffa', fontSize: 13.5, marginBottom: 16 }} />
+        <SectionTitle>Message</SectionTitle>
+        <textarea value={body} onChange={e => sBody(e.target.value)} style={{ width: '100%', minHeight: 190, padding: 12, borderRadius: 11, border: '1px solid #e6dffa', fontSize: 13, lineHeight: 1.55, resize: 'vertical', fontFamily: 'inherit' }} />
+      </div>
+      <div style={{ padding: 22, background: '#f6f3fc', overflowY: 'auto' }}>
+        <SectionTitle>Live Preview</SectionTitle>
+        <iframe title="preview" srcDoc={built.html} style={{ width: '100%', height: 430, border: '1px solid #e6dffa', borderRadius: 13, background: '#fff' }} />
+      </div>
+    </div>
+    <div style={{ padding: '16px 22px', borderTop: '1px solid #efe9fa', display: 'flex', gap: 9, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+      <Btn ghost onClick={() => copy(false)}><Copy size={15} />Copy Text</Btn>
+      <Btn ghost onClick={() => copy(true)}><Copy size={15} />Copy Formatted</Btn>
+      <Btn grad={isAvail ? G.amber : G.purple} onClick={openMail}><Send size={15} />Open in Mail App</Btn>
+    </div>
+  </Modal>
+}
+
+/* ---------- shared ui ---------- */
+const Header = ({ title, sub, action }) => <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, gap: 16, flexWrap: 'wrap' }}>
+  <div><h1 className="serif gtext" style={{ fontSize: 30, fontWeight: 800 }}>{title}</h1><p style={{ color: '#8b7fb0', fontSize: 14, marginTop: 4 }}>{sub}</p></div>
+  {action && <button onClick={action.on} style={{ padding: '11px 18px', borderRadius: 13, background: G.purple, color: '#fff', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 8px 20px rgba(124,58,237,.28)' }}>{action.icon || <Plus size={17} />}{action.label}</button>}
+</div>
+const Filter = ({ opts, val, set }) => <div style={{ display: 'inline-flex', gap: 3, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #efe9fa', marginBottom: 18, flexWrap: 'wrap' }}>{opts.map(([v, l]) => <button key={v} onClick={() => set(v)} style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: val === v ? G.purple : 'transparent', color: val === v ? '#fff' : '#8b7fb0', transition: 'all .15s' }}>{l}</button>)}</div>
+const Btn = ({ children, grad, ghost, danger, small, ...p }) => <button {...p} style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 11, fontSize: small ? 12 : 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7, background: grad || (ghost ? '#fff' : G.purple), color: grad ? '#fff' : ghost ? (danger ? '#B91C1C' : '#4b5563') : '#fff', border: ghost ? `1px solid ${danger ? '#FECACA' : '#e6dffa'}` : 'none', boxShadow: grad ? '0 6px 16px rgba(124,58,237,.22)' : 'none' }}>{children}</button>
+const BackBtn = ({ onClick }) => <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#7C3AED', fontSize: 13.5, fontWeight: 700, marginBottom: 18 }}><Arrow size={16} style={{ transform: 'rotate(180deg)' }} />Back</button>
+const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#a99fc8', fontSize: 13.5, gridColumn: '1/-1' }}>{children}</div>
+const Row = ({ ic, children }) => <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5 }}><span style={{ color: '#b6abd4' }}>{ic}</span>{children}</div>
+const Stat = ({ ic, l, v }) => <div style={{ background: '#faf8ff', borderRadius: 12, padding: 14 }}><div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: '#a99fc8', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '.05em', marginBottom: 6 }}>{ic}{l}</div><div style={{ fontSize: 14.5, fontWeight: 700 }}>{v}</div></div>
+function Modal({ children, onX, wide }) { return <div onClick={onX} style={{ position: 'fixed', inset: 0, background: 'rgba(30,20,55,.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500, padding: 20 }}><div onClick={e => e.stopPropagation()} className="card" style={{ width: wide ? 880 : 440, maxWidth: '100%', maxHeight: '92vh', overflow: 'auto', animation: 'pop .25s ease' }}>{children}</div></div> }
+
+function FModal({ t, sub, onX, fs, onOk }) {
+  const gd = f => f.df !== undefined ? f.df : (f.ty === 'num' ? 0 : '')
+  const [fm, sFm] = useState(Object.fromEntries(fs.map(f => [f.k, gd(f)])))
+  const up = (k, v) => sFm(p => ({ ...p, [k]: v }))
+  const ok = fs.filter(f => f.rq).every(f => fm[f.k])
+  const st = { width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e6dffa', fontSize: 13.5, background: '#fff' }
+  return <Modal onX={onX}>
+    <div style={{ background: G.purple, padding: '20px 26px', color: '#fff' }}><h2 className="serif" style={{ fontSize: 20, fontWeight: 700 }}>{t}</h2>{sub && <div style={{ fontSize: 12.5, opacity: .9, marginTop: 2 }}>{sub}</div>}</div>
+    <div style={{ padding: 26 }}>
+      <div style={{ display: 'grid', gap: 13 }}>{fs.map(f => { const lbl = <label style={{ fontSize: 11.5, fontWeight: 700, color: '#7a6fa0', marginBottom: 5, display: 'block' }}>{f.l}{f.rq ? <span style={{ color: '#EC4899' }}> *</span> : null}</label>
+        if (f.ty === 'sel') return <div key={f.k}>{lbl}<select style={st} value={fm[f.k]} onChange={e => up(f.k, e.target.value)}>{f.opts.map(o => <option key={o}>{o}</option>)}</select></div>
+        if (f.ty === 'tog') return <div key={f.k}>{lbl}<div style={{ display: 'flex', gap: 7 }}>{f.opts.map(o => <button key={o} onClick={() => up(f.k, o)} style={{ flex: 1, padding: '10px 0', borderRadius: 11, fontSize: 12.5, fontWeight: 700, border: fm[f.k] === o ? '2px solid #7C3AED' : '1px solid #e6dffa', background: fm[f.k] === o ? '#f5f0ff' : '#fff', color: fm[f.k] === o ? '#7C3AED' : '#9ca3af' }}>{o === 'member' ? 'Core' : o === 'guest' ? 'Guest' : o}</button>)}</div></div>
+        if (f.ty === 'area') return <div key={f.k}>{lbl}<textarea style={{ ...st, minHeight: 72, resize: 'vertical' }} value={fm[f.k]} onChange={e => up(f.k, e.target.value)} /></div>
+        if (f.ty === 'date') return <div key={f.k}>{lbl}<input type="date" style={st} value={fm[f.k]} onChange={e => up(f.k, e.target.value)} /></div>
+        if (f.ty === 'num') return <div key={f.k}>{lbl}<input type="number" style={st} value={fm[f.k]} onChange={e => up(f.k, parseFloat(e.target.value) || 0)} /></div>
+        return <div key={f.k}>{lbl}<input style={st} value={fm[f.k]} onChange={e => up(f.k, e.target.value)} /></div>
+      })}</div>
+      <div style={{ display: 'flex', gap: 9, marginTop: 22, justifyContent: 'flex-end' }}>
+        <Btn ghost onClick={onX}>Cancel</Btn>
+        <button onClick={() => ok && onOk(fm)} style={{ padding: '10px 22px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700, opacity: ok ? 1 : .4, boxShadow: '0 6px 16px rgba(124,58,237,.22)' }}>Save</button>
+      </div>
+    </div>
+  </Modal>
 }

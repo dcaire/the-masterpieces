@@ -19,16 +19,35 @@ export const Defs = () => (
       <linearGradient id="gGold" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#FDE68A" /><stop offset="1" stopColor="#F59E0B" />
       </linearGradient>
+      <linearGradient id="gPlum" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#4C1D95" /><stop offset="1" stopColor="#7C3AED" />
+      </linearGradient>
+      <linearGradient id="gFrame" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#FCE8B6" /><stop offset=".5" stopColor="#E3B341" /><stop offset="1" stopColor="#B8860B" />
+      </linearGradient>
     </defs>
   </svg>
 );
 
-// Brand crest — a rounded gradient tile with a treble clef + the four quartet "voices" as dots.
+// Brand crest — "a framed masterpiece, sung in four voices."
+// A gilded gallery frame over a deep-plum tile, a treble clef, and the four
+// quartet voices (Soprano · Alto · Tenor · Bass) as a colored chord.
 export const Logo = ({ size = 38 }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="13" fill="url(#gPurple)" />
-    <path d="M27.5 12c-2.6.9-4.1 3.2-4.1 6 0 2 .7 3.4 2.4 5.5l.7.9-.5 3.1c-1-.5-1.9-.7-2.9-.7-3 0-5.1 2-5.1 4.8 0 2.7 2 4.6 4.8 4.6 2.9 0 5-2 5-5.1 0-.6 0-.9-.3-2.5l-.3-1.7c2.3.8 3.6 2.3 3.6 4.2 0 .8-.2 1.4-.8 2.2-.2.3-.2.3-.1.4.3.2 1.6-1 2-1.9.3-.6.4-1.1.4-1.9 0-2.6-1.8-4.6-4.8-5.4l-.5-.1.3-2c1.9-2 2.6-3.6 2.6-5.7 0-2.3-.9-3.9-2.4-4.5-.4-.1-.5-.1-.6 0Zm.8 2c.5.6.7 1.4.7 2.5 0 1.6-.5 2.8-1.8 4.3l-.4.4-.2-1.1c-.4-2.1-.2-4 .6-5.3.5-.8.9-1 1.3-.8Zm-5 14.6c.4.1.8.2 1.2.4l.3 1.9c.2 1.4.2 1.6.2 2.1 0 1.7-1 2.8-2.5 2.8s-2.6-1.1-2.6-2.7c0-1.8 1.6-3.1 3.4-2.5Z" fill="#fff" />
-    <circle cx="36" cy="13" r="2.3" fill="url(#gGold)" />
+    <rect width="48" height="48" rx="13" fill="url(#gPlum)" />
+    {/* gilded gallery frame */}
+    <rect x="6" y="6" width="36" height="36" rx="9.5" fill="none" stroke="url(#gFrame)" strokeWidth="2.2" />
+    <rect x="9.5" y="9.5" width="29" height="29" rx="6.5" fill="none" stroke="#F6E3A6" strokeWidth="1" opacity=".45" />
+    {/* treble clef, shifted left to leave room for the chord */}
+    <g transform="translate(-5.4 0) scale(.9)" fill="#FBF3DC">
+      <path d="M27.5 12c-2.6.9-4.1 3.2-4.1 6 0 2 .7 3.4 2.4 5.5l.7.9-.5 3.1c-1-.5-1.9-.7-2.9-.7-3 0-5.1 2-5.1 4.8 0 2.7 2 4.6 4.8 4.6 2.9 0 5-2 5-5.1 0-.6 0-.9-.3-2.5l-.3-1.7c2.3.8 3.6 2.3 3.6 4.2 0 .8-.2 1.4-.8 2.2-.2.3-.2.3-.1.4.3.2 1.6-1 2-1.9.3-.6.4-1.1.4-1.9 0-2.6-1.8-4.6-4.8-5.4l-.5-.1.3-2c1.9-2 2.6-3.6 2.6-5.7 0-2.3-.9-3.9-2.4-4.5-.4-.1-.5-.1-.6 0Zm.8 2c.5.6.7 1.4.7 2.5 0 1.6-.5 2.8-1.8 4.3l-.4.4-.2-1.1c-.4-2.1-.2-4 .6-5.3.5-.8.9-1 1.3-.8Zm-5 14.6c.4.1.8.2 1.2.4l.3 1.9c.2 1.4.2 1.6.2 2.1 0 1.7-1 2.8-2.5 2.8s-2.6-1.1-2.6-2.7c0-1.8 1.6-3.1 3.4-2.5Z" />
+    </g>
+    {/* the four voices, as a rising chord with a shared stem */}
+    <rect x="32.4" y="15" width="1.5" height="16.5" rx=".75" fill="#F6E3A6" opacity=".8" />
+    <circle cx="29.5" cy="30.5" r="2.5" fill="#F472B6" />
+    <circle cx="29.5" cy="26" r="2.5" fill="#A78BFA" />
+    <circle cx="29.5" cy="21.5" r="2.5" fill="#FBBF24" />
+    <circle cx="29.5" cy="17" r="2.5" fill="#22D3EE" />
   </svg>
 );
 

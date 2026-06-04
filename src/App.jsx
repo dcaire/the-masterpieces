@@ -69,6 +69,8 @@ export default function App() {
   const [rf, sRf] = useState('all'); const [lf, sLf] = useState('all'); const [mf, sMf] = useState('all'); const [q, sQ] = useState('')
   const [shS, sShS] = useState(false); const [shI, sShI] = useState(false); const [shM, sShM] = useState(false)
   const [eSng, sESng] = useState(null) // roster id being edited
+  const [eMus, sEMus] = useState(null) // music_library id being edited
+  const [eInq, sEInq] = useState(null) // inquiry id being edited
   const [email, sEmail] = useState(null) // {lead} or {availability:ev}
 
   const noti = m => { sTst(m); setTimeout(() => sTst(null), 3000) }
@@ -101,6 +103,8 @@ export default function App() {
   const addI = async d => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: d.contact, organization: d.org, phone: d.phone, email: d.email, event_date: d.eventDate || null, event_type: d.eventType, expected_donation: d.expectedDonation, notes: d.notes, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); sShI(false); noti('Booking inquiry added') } }
   const addS = async d => { const { data: ins } = await sb.from('roster').insert({ name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type, active: true }).select().single(); if (ins) { sR(p => [...p, ins]); sShS(false); noti(`${d.name} added`) } }
   const updS = async d => { const id = eSng; const patch = { name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type }; const { error } = await sb.from('roster').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sR(p => p.map(r => r.id === id ? { ...r, ...patch } : r)); sESng(null); noti(`${d.name} updated`) }
+  const updM = async d => { const id = eMus; const patch = { title: d.title, arranger: d.arranger, category: d.category, pages: d.pages, file_size_mb: d.size, cloud_only: d.dest === 'Cloud only' }; const { error } = await sb.from('music_library').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sM(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEMus(null); noti(`“${d.title}” updated`) }
+  const updI = async d => { const id = eInq; const patch = { contact_name: d.contact, organization: d.org, phone: d.phone, email: d.email, event_date: d.eventDate || null, event_type: d.eventType, expected_donation: d.expectedDonation, notes: d.notes }; const { error } = await sb.from('inquiries').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sI(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEInq(null); noti('Booking updated') }
   const addM = async d => { const { data: ins } = await sb.from('music_library').insert({ title: d.title, arranger: d.arranger, category: d.category, voice_parts: ['Soprano', 'Alto', 'Tenor', 'Bass'], pages: d.pages, file_size_mb: d.size, cloud_only: d.dest === 'Cloud only' }).select().single(); if (ins) { sM(p => [...p, ins]); sShM(false); noti(`“${d.title}” uploaded${d.dest === 'Cloud only' ? '' : ' & synced to iPads'}`) } }
   const updR = async (eid, rid, resp) => { const ex = A.find(a => a.event_id === eid && a.roster_id === rid); if (ex) { await sb.from('member_availability').update({ response: resp }).eq('id', ex.id); sA(p => p.map(a => a.id === ex.id ? { ...a, response: resp } : a)) } else { const { data: ins } = await sb.from('member_availability').insert({ event_id: eid, roster_id: rid, response: resp }).select().single(); if (ins) sA(p => [...p, ins]) } }
   const togAct = async id => { const s = R.find(r => r.id === id); await sb.from('roster').update({ active: !s.active }).eq('id', id); sR(p => p.map(r => r.id === id ? { ...r, active: !r.active } : r)); noti(`${s.name} ${s.active ? 'set inactive' : 'reactivated'}`) }
@@ -132,8 +136,8 @@ export default function App() {
     <main style={{ maxWidth: 1180, margin: '0 auto', padding: '30px 22px 70px' }}>
       {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }} />}
       {tab === 'quartet' && <Quartet {...{ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
-      {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM }} />}
-      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail }} />}
+      {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq }} />}
       {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }} />}
     </main>
 
@@ -142,6 +146,8 @@ export default function App() {
     {eSng != null && (() => { const s = R.find(r => r.id === eSng); return s ? <FModal t="Edit Singer" sub={`Update ${s.name}’s details`} onX={() => sESng(null)} onOk={updS} fs={[{ k: 'name', l: 'Full name', rq: 1, df: s.name }, { k: 'phone', l: 'Phone', df: s.phone || '' }, { k: 'email', l: 'Email', df: s.email || '' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: s.voice_part }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: s.singer_type }]} /> : null })()}
     {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'expectedDonation', l: 'Expected donation to TMC ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
     {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: 'Jazz' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
+    {eMus != null && (() => { const s = M.find(x => x.id === eMus); return s ? <FModal t="Edit Arrangement" sub={`Update “${s.title}”`} onX={() => sEMus(null)} onOk={updM} fs={[{ k: 'title', l: 'Title', rq: 1, df: s.title }, { k: 'arranger', l: 'Arranger / Composer', df: s.arranger || '' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: s.category }, { k: 'pages', l: 'Pages', ty: 'num', df: s.pages }, { k: 'size', l: 'File size (MB)', ty: 'num', df: s.file_size_mb }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: s.cloud_only ? 'Cloud only' : 'Sync to iPads' }]} /> : null })()}
+    {eInq != null && (() => { const inq = I.find(x => x.id === eInq); return inq ? <FModal t="Edit Booking Inquiry" sub={`Update ${inq.contact_name}’s inquiry`} onX={() => sEInq(null)} onOk={updI} fs={[{ k: 'contact', l: 'Contact name', rq: 1, df: inq.contact_name }, { k: 'org', l: 'Organization', rq: 1, df: inq.organization || '' }, { k: 'phone', l: 'Phone', df: inq.phone || '' }, { k: 'email', l: 'Email', df: inq.email || '' }, { k: 'eventDate', l: 'Event date', ty: 'date', df: inq.event_date || '' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: inq.event_type }, { k: 'expectedDonation', l: 'Expected donation to TMC ($)', ty: 'num', df: inq.expected_donation }, { k: 'notes', l: 'Notes', ty: 'area', df: inq.notes || '' }]} /> : null })()}
     {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti }} />}
   </div>
 }
@@ -265,7 +271,7 @@ function SingerDetail({ R, sSng, sSSng, togAct, togTy, sESng }) {
 }
 
 /* ---------- music ---------- */
-function Music({ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM }) {
+function Music({ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }) {
   const cats = ['all', ...new Set(M.map(s => s.category))]
   const fd = M.filter(s => (s.title.toLowerCase().includes(q.toLowerCase()) || (s.arranger || '').toLowerCase().includes(q.toLowerCase())) && (mf === 'all' || s.category === mf))
   const pct = Math.min(100, (parseFloat(sMB) / Math.max(parseFloat(tMB), 1)) * 100)
@@ -292,13 +298,14 @@ function Music({ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(310px,1fr))', gap: 12 }}>{fd.map(s => { const onPad = !s.cloud_only; return <div key={s.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 13 }}>
       <IconChip grad={onPad ? G.green : 'linear-gradient(135deg,#cbd5e1,#94a3b8)'} size={42}>{onPad ? <Tablet size={19} /> : <Cloud size={19} />}</IconChip>
       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div><div style={{ fontSize: 12, color: '#a99fc8', marginBottom: 4 }}>{s.arranger || 'Traditional'}</div><div style={{ fontSize: 11, color: '#bbb1d6' }}>{s.category} · {s.pages}pg · {s.file_size_mb}MB</div></div>
+      <button onClick={() => sEMus(s.id)} title="Edit arrangement" style={{ padding: 8, borderRadius: 10, color: '#7a6fa0', background: '#f4f0fb', display: 'flex', alignItems: 'center' }}><Pencil size={15} /></button>
       <button onClick={() => togSync(s.id)} style={{ padding: '8px 13px', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, background: onPad ? '#D1FAE5' : '#f1ecfb', color: onPad ? '#047857' : '#7a6fa0' }}>{onPad ? <><Check size={14} />iPad</> : <><Cloud size={14} />Cloud</>}</button>
     </div> })}{!fd.length && <Empty>No arrangements match your search.</Empty>}</div>
   </div>
 }
 
 /* ---------- bookings (leads) ---------- */
-function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail }) {
+function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq }) {
   const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
   const fd = I.filter(i => lf === 'all' || i.status === lf)
   const od = I.filter(i => i.status !== 'lost' && i.next_follow_up && new Date(i.next_follow_up + 'T12:00:00') < new Date())
@@ -328,6 +335,7 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
           </div>
           <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
             <Btn grad={G.purple} onClick={() => sEmail({ lead: inq })}><Mail size={16} />Compose Email</Btn>
+            <Btn ghost onClick={() => sEInq(inq.id)}><Pencil size={16} />Edit</Btn>
             <Btn ghost onClick={() => logFU(inq.id)}><Check size={16} />Log Follow-up</Btn>
             {inq.status === 'new' && <Btn ghost onClick={() => updIS(inq.id, 'contacted')}>Mark Contacted</Btn>}
             {inq.status === 'contacted' && <Btn grad={G.green} onClick={() => updIS(inq.id, 'confirmed')}><Check size={16} />Confirm</Btn>}

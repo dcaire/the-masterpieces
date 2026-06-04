@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { sb } from './sb'
-import { buildEmail, buildAvailabilityEmail, mailto, TEMPLATES } from './email'
+import { buildEmail, buildAvailabilityEmail, buildProposalEmail, mailto, TEMPLATES } from './email'
 import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Copy, Send, Bell, MapPin, Arrow, Search, Dollar } from './icons'
 
 /* ---------- helpers ---------- */
@@ -147,6 +147,19 @@ export default function App() {
 const Splash = () => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}><style>{css}</style><Defs /><div className="mesh" /><div style={{ animation: 'pop .5s ease' }}><Logo size={64} /></div><div style={{ textAlign: 'center', zIndex: 1 }}><div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>The Masterpieces</div><div style={{ fontSize: 13, color: '#9b8fc0', marginTop: 5 }}>Tuning up…</div></div></div>
 const ErrorView = ({ err }) => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><style>{css}</style><div className="card" style={{ textAlign: 'center', padding: 40, maxWidth: 380 }}><div style={{ fontSize: 17, fontWeight: 700, color: '#B91C1C' }}>Connection Error</div><div style={{ fontSize: 13, color: '#888', margin: '10px 0 18px' }}>{err}</div><button onClick={() => location.reload()} style={{ padding: '11px 24px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700 }}>Retry</button></div></div>
 
+/* ---------- mission hero (shows group photo when present at /quartet.jpg) ---------- */
+const MISSION = <span><b style={{ color: '#7C3AED' }}>A mixed quartet with piano accompaniment</b> representing <b>Texas Master Chorale</b> when a full chorus isn’t feasible — jazz, swing &amp; pop from the 1930s to today, plus Christmas and patriotic. Fees are a tax-deductible donation to TMC.</span>
+function MissionHero() {
+  const [hasPhoto, setHasPhoto] = useState(true)
+  return <div className="card" style={{ marginBottom: 22, overflow: 'hidden', display: 'grid', gridTemplateColumns: hasPhoto ? '300px 1fr' : '1fr' }}>
+    {hasPhoto && <img src="/quartet.jpg" alt="The Masterpieces" onError={() => setHasPhoto(false)} style={{ width: '100%', height: '100%', maxHeight: 168, objectFit: 'cover', display: 'block' }} />}
+    <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(135deg,#faf5ff,#fff)' }}>
+      <IconChip grad={G.purple} size={38}><Sparkle size={18} /></IconChip>
+      <div style={{ fontSize: 12.5, color: '#6b5b8f', lineHeight: 1.55 }}>{MISSION}</div>
+    </div>
+  </div>
+}
+
 /* ---------- dashboard ---------- */
 function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }) {
   const hr = new Date().getHours()
@@ -157,17 +170,14 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }
     { l: 'The Quartet', v: core.length, s: guests.length ? `+ ${guests.length} guest singer${guests.length > 1 ? 's' : ''}` : 'Core voices', grad: G.purple, ic: <Users size={20} />, go: 'quartet' },
     { l: 'Cloud Library', v: M.length, s: `${sN} on iPads · ${tMB} MB`, grad: G.teal, ic: <Note size={20} />, go: 'music' },
     { l: 'Follow-ups Due', v: pFU, s: 'within 3 days', grad: G.amber, ic: <Bell size={20} />, go: 'bookings' },
-    { l: 'Pipeline', v: $(pipe), s: `${I.filter(i => i.status !== 'lost').length} active leads`, grad: G.green, ic: <Dollar size={20} />, go: 'bookings' },
+    { l: 'TMC Donations', v: $(pipe), s: `pipeline · ${I.filter(i => i.status !== 'lost').length} active leads`, grad: G.green, ic: <Dollar size={20} />, go: 'bookings' },
   ]
   return <div className="fade">
     <div style={{ marginBottom: 18 }}>
       <h1 className="serif" style={{ fontSize: 30, fontWeight: 800 }}>{greet}, Beth 👋</h1>
       <p style={{ color: '#8b7fb0', fontSize: 14.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
     </div>
-    <div className="card" style={{ padding: '14px 18px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(135deg,#faf5ff,#fff)' }}>
-      <IconChip grad={G.purple} size={38}><Sparkle size={18} /></IconChip>
-      <div style={{ fontSize: 12.5, color: '#6b5b8f', lineHeight: 1.5 }}><b style={{ color: '#7C3AED' }}>A mixed quartet with piano accompaniment</b> representing <b>Texas Master Chorale</b> when a full chorus isn’t feasible — jazz, swing & pop from the 1930s to today, plus Christmas and patriotic. Fees are a tax-deductible donation to TMC.</div>
-    </div>
+    <MissionHero />
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
       {cards.map((c, i) => <div key={i} className="card lift" onClick={() => nav(c.go)} style={{ padding: 20, cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}><div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#a99fc8' }}>{c.l}</div><IconChip grad={c.grad} size={40}>{c.ic}</IconChip></div>
@@ -355,7 +365,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><Avatar name={m.name} part={m.voice_part} type={m.singer_type} size={36} /><div><div style={{ fontSize: 13.5, fontWeight: 700 }}>{m.name}</div><div style={{ display: 'flex', gap: 5, marginTop: 2 }}><Pill bg={pcv.bg} fg={pcv.fg}>{m.voice_part}</Pill>{m.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">guest</Pill>}</div></div></div>
             <div style={{ display: 'flex', gap: 5 }}>{['yes', 'pending', 'no'].map(r => { const c = RESP[r]; const on = (ea[m.id] || 'pending') === r; return <button key={r} onClick={() => updR(ev.id, m.id, r)} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 11.5, fontWeight: 700, textTransform: 'capitalize', background: on ? c.fg : '#eee', color: on ? '#fff' : '#9ca3af' }}>{r}</button> })}</div>
           </div> })}</div>
-          <SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf8ff', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f1ecfb' : '#D1FAE5'} fg={s.cloud_only ? '#7a6fa0' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
         </div>
       </div>
@@ -381,16 +391,19 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
 /* ---------- email composer ---------- */
 function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
   const isAvail = !!email.availability
+  const isProposal = !!email.proposal
+  const isFollowup = !isAvail && !isProposal
   const lead = email.lead
-  const ev = email.availability
-  const defType = isAvail ? null : (lead.status === 'contacted' ? 'followup' : lead.status === 'confirmed' ? 'confirmation' : lead.status === 'lost' ? 'thanks' : 'outreach')
+  const ev = email.availability || email.proposal
+  const defType = isFollowup ? (lead.status === 'contacted' ? 'followup' : lead.status === 'confirmed' ? 'confirmation' : lead.status === 'lost' ? 'thanks' : 'outreach') : null
   const [type, sType] = useState(defType)
-  const built = useMemo(() => isAvail ? buildAvailabilityEmail(ev) : buildEmail(type, lead), [type, isAvail, lead, ev])
+  const built = useMemo(() => isAvail ? buildAvailabilityEmail(ev) : isProposal ? buildProposalEmail(email.proposal, email.songs) : buildEmail(type, lead), [type, isAvail, isProposal, lead, ev, email.songs, email.proposal])
   const [subject, sSubject] = useState(built.subject)
   const [body, sBody] = useState(built.text)
   useEffect(() => { sSubject(built.subject); sBody(built.text) }, [built])
 
-  const recipients = isAvail ? aR.map(m => m.email).filter(Boolean).join(',') : (lead.email || '')
+  const accent = isAvail ? G.amber : G.purple
+  const recipients = isAvail ? aR.map(m => m.email).filter(Boolean).join(',') : isProposal ? '' : (lead.email || '')
   const copy = async (html) => {
     try {
       if (html && navigator.clipboard && navigator.clipboard.write) await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([built.html], { type: 'text/html' }), 'text/plain': new Blob([body], { type: 'text/plain' }) })])
@@ -398,17 +411,19 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
       noti(html ? 'Formatted email copied' : 'Email text copied')
     } catch { noti('Copy unavailable — please select the text manually') }
   }
-  const openMail = () => { window.location.href = mailto(recipients, subject, body); if (!isAvail && onLogged) onLogged(lead.id) }
+  const openMail = () => { window.location.href = mailto(recipients, subject, body); if (isFollowup && onLogged) onLogged(lead.id) }
+  const title = isAvail ? 'Availability Request' : isProposal ? 'Program Proposal' : 'Compose Follow-up'
+  const sub = isAvail ? `To the quartet · ${ev.title}` : isProposal ? `To the client · ${ev.title}` : `To ${lead.contact_name} · ${lead.organization}`
 
   return <Modal onX={() => sEmail(null)} wide>
-    <div style={{ background: isAvail ? G.amber : G.purple, padding: '20px 26px', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
-      <Mail size={24} /><div><div style={{ fontSize: 18, fontWeight: 800 }}>{isAvail ? 'Availability Request' : 'Compose Follow-up'}</div><div style={{ fontSize: 12.5, opacity: .9 }}>{isAvail ? `To the quartet · ${ev.title}` : `To ${lead.contact_name} · ${lead.organization}`}</div></div>
+    <div style={{ background: accent, padding: '20px 26px', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Mail size={24} /><div><div style={{ fontSize: 18, fontWeight: 800 }}>{title}</div><div style={{ fontSize: 12.5, opacity: .9 }}>{sub}</div></div>
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
       <div style={{ padding: 22, overflowY: 'auto', borderRight: '1px solid #efe9fa' }}>
-        {!isAvail && <><SectionTitle>Template</SectionTitle><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>{Object.entries(TEMPLATES).map(([k, t]) => <button key={k} onClick={() => sType(k)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 11, border: type === k ? '2px solid #7C3AED' : '1px solid #e6dffa', background: type === k ? '#f5f0ff' : '#fff' }}><div style={{ fontSize: 12.5, fontWeight: 800, color: type === k ? '#7C3AED' : '#1f2937' }}>{t.label}</div><div style={{ fontSize: 10.5, color: '#a99fc8', marginTop: 2 }}>{t.hint}</div></button>)}</div></>}
+        {isFollowup && <><SectionTitle>Template</SectionTitle><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>{Object.entries(TEMPLATES).map(([k, t]) => <button key={k} onClick={() => sType(k)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 11, border: type === k ? '2px solid #7C3AED' : '1px solid #e6dffa', background: type === k ? '#f5f0ff' : '#fff' }}><div style={{ fontSize: 12.5, fontWeight: 800, color: type === k ? '#7C3AED' : '#1f2937' }}>{t.label}</div><div style={{ fontSize: 10.5, color: '#a99fc8', marginTop: 2 }}>{t.hint}</div></button>)}</div></>}
         <SectionTitle>Recipients</SectionTitle>
-        <div style={{ fontSize: 12.5, color: recipients ? '#4b5563' : '#EF4444', background: '#faf8ff', borderRadius: 10, padding: '9px 12px', marginBottom: 16, wordBreak: 'break-all' }}>{recipients || 'No email address on file'}</div>
+        <div style={{ fontSize: 12.5, color: recipients ? '#4b5563' : '#a99fc8', background: '#faf8ff', borderRadius: 10, padding: '9px 12px', marginBottom: 16, wordBreak: 'break-all' }}>{recipients || (isProposal ? 'Add the client’s email in your mail app' : 'No email address on file')}</div>
         <SectionTitle>Subject</SectionTitle>
         <input value={subject} onChange={e => sSubject(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e6dffa', fontSize: 13.5, marginBottom: 16 }} />
         <SectionTitle>Message</SectionTitle>
@@ -422,7 +437,7 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
     <div style={{ padding: '16px 22px', borderTop: '1px solid #efe9fa', display: 'flex', gap: 9, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
       <Btn ghost onClick={() => copy(false)}><Copy size={15} />Copy Text</Btn>
       <Btn ghost onClick={() => copy(true)}><Copy size={15} />Copy Formatted</Btn>
-      <Btn grad={isAvail ? G.amber : G.purple} onClick={openMail}><Send size={15} />Open in Mail App</Btn>
+      <Btn grad={accent} onClick={openMail}><Send size={15} />Open in Mail App</Btn>
     </div>
   </Modal>
 }

@@ -7,6 +7,9 @@ const SIGNATURE_NAME = 'Beth';
 const SIGNATURE_ROLE = 'Manager, The Masterpieces';
 const SIGNATURE_TAG = 'A mixed quartet with piano accompaniment — representing Texas Master Chorale';
 const TAX_NOTE = 'Our performance fee is simply a tax-deductible donation to Texas Master Chorale.';
+// Optional: paste a public image URL (e.g. the group photo) to show it atop every email.
+// Emails can't read local files, so this must be a hosted https:// URL.
+const BAND_PHOTO_URL = '';
 
 const fmtDate = (d) => {
   if (!d) return 'a date that works for you';
@@ -22,7 +25,9 @@ function shell(bodyHtml, accent = ['#7C3AED', '#EC4899']) {
   return `<div style="margin:0;padding:24px;background:#f4f1fb;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2937">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(124,58,237,.12)">
     <div style="background:linear-gradient(135deg,${accent[0]},${accent[1]});padding:34px 32px 30px;text-align:center">
-      <div style="display:inline-block;width:54px;height:54px;line-height:54px;border-radius:16px;background:rgba(255,255,255,.18);color:#fff;font-size:26px;font-weight:700;font-family:Georgia,serif">M</div>
+      ${BAND_PHOTO_URL
+        ? `<img src="${BAND_PHOTO_URL}" alt="The Masterpieces" width="120" style="width:120px;height:120px;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.4)" />`
+        : `<div style="display:inline-block;width:54px;height:54px;line-height:54px;border-radius:16px;background:rgba(255,255,255,.18);color:#fff;font-size:26px;font-weight:700;font-family:Georgia,serif">M</div>`}
       <div style="margin-top:14px;color:#fff;font-size:22px;font-weight:700;letter-spacing:.3px;font-family:Georgia,serif">The Masterpieces</div>
       <div style="margin-top:4px;color:rgba(255,255,255,.85);font-size:12px;letter-spacing:1.5px;text-transform:uppercase">Mixed Quartet</div>
     </div>
@@ -122,6 +127,35 @@ export function buildAvailabilityEmail(ev) {
   const text = `Hi everyone,\n\nWe have a possible booking and I need to know who's available:\n\n  ${ev.title}\n  ${when}${ev.event_time ? ' at ' + ev.event_time : ''}\n  ${ev.venue || ''}\n\nPlease reply YES, NO, or MAYBE as soon as you can so I can confirm with the client.\n\nThank you!\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}`;
   const rows = [['Event', ev.title], ['Date', when], ...(ev.event_time ? [['Time', ev.event_time]] : []), ...(ev.venue ? [['Venue', ev.venue]] : [])];
   const html = shell(p(`Hi everyone,`) + p(`We have a possible booking and I need to know who's available:`) + detailCard(rows, accent) + p(`Please reply <strong>YES</strong>, <strong>NO</strong>, or <strong>MAYBE</strong> as soon as you can so I can confirm with the client.`) + p(`Thank you! 🎶`), accent);
+  return { subject, text, html };
+}
+
+// Program proposal sent to the client for a confirmed/upcoming event.
+// `songTitles` is an array of the planned pieces for the event.
+export function buildProposalEmail(ev, songTitles = [], clientName = '') {
+  const accent = ['#7C3AED', '#EC4899'];
+  const when = fmtDate(ev.event_date);
+  const subject = `Your program — The Masterpieces at ${ev.title}`;
+  const list = songTitles.length ? songTitles : ['(program to be finalized)'];
+  const textList = list.map((t, i) => `  ${i + 1}. ${t}`).join('\n');
+  const text = [
+    `Hi ${clientName ? first(clientName) : 'there'},`,
+    `Thank you again for having The Masterpieces! Here's the program we've put together for ${ev.title}${ev.event_date ? ` on ${when}` : ''}:`,
+    ``,
+    textList,
+    ``,
+    `We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`,
+    `${TAX_NOTE}`,
+    `Looking forward to singing for you!`,
+  ].join('\n');
+  const htmlList = `<ol style="margin:0 0 18px;padding-left:22px">${list.map(t => `<li style="font-size:14px;line-height:1.8;color:#1f2937;font-weight:600">${t}</li>`).join('')}</ol>`;
+  const html = shell(
+    p(`Hi ${clientName ? first(clientName) : 'there'},`) +
+    p(`Thank you again for having <strong>The Masterpieces</strong>! Here's the program we've put together for <strong>${ev.title}</strong>${ev.event_date ? ` on <strong>${when}</strong>` : ''}:`) +
+    htmlList +
+    p(`We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`) +
+    p(`As always, ${TAX_NOTE.charAt(0).toLowerCase() + TAX_NOTE.slice(1)}`),
+    accent);
   return { subject, text, html };
 }
 

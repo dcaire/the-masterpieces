@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { sb } from './sb'
 import { buildEmail, buildAvailabilityEmail, buildProposalEmail, mailto, TEMPLATES } from './email'
-import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Copy, Send, Bell, MapPin, Arrow, Search, Dollar, Pencil } from './icons'
+import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Copy, Send, Bell, MapPin, Arrow, Search, Dollar, Pencil, Target, Globe } from './icons'
 
 /* ---------- helpers ---------- */
 const fmt = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return d || '' } }
@@ -28,6 +28,25 @@ const SB = {
   confirmed: { bg: '#D1FAE5', fg: '#047857' }, lost: { bg: '#FEE2E2', fg: '#B91C1C' }, pending: { bg: '#FEF3C7', fg: '#B45309' },
 }
 const RESP = { yes: { bg: '#D1FAE5', fg: '#047857', bd: '#6EE7B7' }, no: { bg: '#FEE2E2', fg: '#B91C1C', bd: '#FCA5A5' }, pending: { bg: '#FEF3C7', fg: '#B45309', bd: '#FCD34D' } }
+// prospect pipeline statuses + target-market types
+const PS = {
+  prospect: { bg: '#EDE9FE', fg: '#7C3AED', l: 'Prospect' }, contacted: { bg: '#FEF3C7', fg: '#B45309', l: 'Contacted' },
+  interested: { bg: '#DBEAFE', fg: '#1D4ED8', l: 'Interested' }, booked: { bg: '#D1FAE5', fg: '#047857', l: 'Booked' }, passed: { bg: '#F3F4F6', fg: '#6B7280', l: 'Passed' },
+}
+const PTYPES = ['Service & Social Club', 'Church / Faith', 'Senior Living', 'Club / Venue', 'Other']
+const PTC = { 'Service & Social Club': G.purple, 'Church / Faith': G.teal, 'Senior Living': G.green, 'Club / Venue': G.amber, Other: G.purple }
+const PFIELDS = (pr = {}) => [
+  { k: 'org', l: 'Organization', rq: 1, df: pr.organization || '' },
+  { k: 'type', l: 'Type', ty: 'sel', opts: PTYPES, df: pr.org_type || 'Service & Social Club' },
+  { k: 'city', l: 'City', df: pr.city || '' },
+  { k: 'organizer', l: 'Organizer / contact name', df: pr.organizer_name || '' },
+  { k: 'role', l: 'Their role', df: pr.organizer_role || '' },
+  { k: 'email', l: 'Organization email', df: pr.email || '' },
+  { k: 'phone', l: 'Phone', df: pr.phone || '' },
+  { k: 'website', l: 'Website', df: pr.website || '' },
+  { k: 'fit', l: 'Fit (1–5)', ty: 'num', df: pr.fit_score || 3 },
+  { k: 'notes', l: 'Notes', ty: 'area', df: pr.notes || '' },
+]
 
 const css = `
 *{box-sizing:border-box;margin:0;padding:0}
@@ -72,18 +91,22 @@ export default function App() {
   const [eMus, sEMus] = useState(null) // music_library id being edited
   const [eInq, sEInq] = useState(null) // inquiry id being edited
   const [email, sEmail] = useState(null) // {lead} or {availability:ev}
+  const [P, sP] = useState([]) // prospects (CRM)
+  const [pf, sPf] = useState('all'); const [ptf, sPtf] = useState('all'); const [pq, sPq] = useState('')
+  const [shP, sShP] = useState(false); const [eP, sEP] = useState(null); const [sPro, sSPro] = useState(null)
 
   const noti = m => { sTst(m); setTimeout(() => sTst(null), 3000) }
-  const nav = t => { sTab(t); sSInq(null); sSEv(null); sSSng(null) }
+  const nav = t => { sTab(t); sSInq(null); sSEv(null); sSSng(null); sSPro(null) }
 
   useEffect(() => { (async () => {
     try {
-      const [r, m, i, e, a] = await Promise.all([
+      const [r, m, i, e, a, pr] = await Promise.all([
         sb.from('roster').select('*').order('id'), sb.from('music_library').select('*').order('id'),
         sb.from('inquiries').select('*').order('created_at', { ascending: false }),
-        sb.from('events').select('*').order('event_date'), sb.from('member_availability').select('*')])
+        sb.from('events').select('*').order('event_date'), sb.from('member_availability').select('*'),
+        sb.from('prospects').select('*').order('fit_score', { ascending: false })])
       if (r.error) throw r.error
-      sR(r.data || []); sM(m.data || []); sI(i.data || []); sE(e.data || []); sA(a.data || [])
+      sR(r.data || []); sM(m.data || []); sI(i.data || []); sE(e.data || []); sA(a.data || []); sP(pr.data || [])
     } catch (e) { sErr(e.message || 'Connection failed') }
     sLd(false)
   })() }, [])
@@ -109,11 +132,16 @@ export default function App() {
   const updR = async (eid, rid, resp) => { const ex = A.find(a => a.event_id === eid && a.roster_id === rid); if (ex) { await sb.from('member_availability').update({ response: resp }).eq('id', ex.id); sA(p => p.map(a => a.id === ex.id ? { ...a, response: resp } : a)) } else { const { data: ins } = await sb.from('member_availability').insert({ event_id: eid, roster_id: rid, response: resp }).select().single(); if (ins) sA(p => [...p, ins]) } }
   const togAct = async id => { const s = R.find(r => r.id === id); await sb.from('roster').update({ active: !s.active }).eq('id', id); sR(p => p.map(r => r.id === id ? { ...r, active: !r.active } : r)); noti(`${s.name} ${s.active ? 'set inactive' : 'reactivated'}`) }
   const togTy = async id => { const s = R.find(r => r.id === id); const nt = s.singer_type === 'member' ? 'guest' : 'member'; await sb.from('roster').update({ singer_type: nt }).eq('id', id); sR(p => p.map(r => r.id === id ? { ...r, singer_type: nt } : r)); noti(`${s.name} → ${nt === 'member' ? 'core quartet' : 'guest singer'}`) }
+  /* prospects (CRM) */
+  const addP = async d => { const { data: ins } = await sb.from('prospects').insert({ organization: d.org, org_type: d.type, city: d.city, organizer_name: d.organizer, organizer_role: d.role, email: d.email, phone: d.phone, website: d.website, fit_score: Number(d.fit) || 3, status: 'prospect', notes: d.notes }).select().single(); if (ins) { sP(p => [ins, ...p]); sShP(false); noti('Prospect added') } }
+  const updP = async d => { const id = eP; const patch = { organization: d.org, org_type: d.type, city: d.city, organizer_name: d.organizer, organizer_role: d.role, email: d.email, phone: d.phone, website: d.website, fit_score: Number(d.fit) || 3, notes: d.notes }; const { error } = await sb.from('prospects').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEP(null); noti('Prospect updated') }
+  const updPS = async (id, st) => { const t = new Date().toISOString().split('T')[0]; const patch = st === 'contacted' ? { status: st, last_contacted: t } : { status: st }; await sb.from('prospects').update(patch).eq('id', id); sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); noti(`Marked “${PS[st]?.l || st}”`) }
+  const convP = async x => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: x.organizer_name || x.organization, organization: x.organization, phone: x.phone, email: x.email, event_type: 'Other', expected_donation: 0, notes: `From prospect (${x.org_type}${x.city ? ', ' + x.city : ''}).${x.notes ? ' ' + x.notes : ''}`, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); await sb.from('prospects').update({ status: 'interested' }).eq('id', x.id); sP(p => p.map(y => y.id === x.id ? { ...y, status: 'interested' } : y)); sSPro(null); sTab('bookings'); noti('Added to Bookings as a new lead') } }
 
   if (ld) return <Splash />
   if (err) return <ErrorView err={err} />
 
-  const tabs = [['dashboard', 'Dashboard', Sparkle], ['quartet', 'Quartet', Users], ['music', 'Music', Note], ['bookings', 'Bookings', Mail], ['events', 'Events', Calendar]]
+  const tabs = [['dashboard', 'Dashboard', Sparkle], ['quartet', 'Quartet', Users], ['music', 'Music', Note], ['bookings', 'Bookings', Mail], ['prospects', 'Prospects', Target], ['events', 'Events', Calendar]]
 
   return <div style={{ position: 'relative', zIndex: 1 }}>
     <style>{css}</style><Defs /><div className="mesh" />
@@ -138,6 +166,7 @@ export default function App() {
       {tab === 'quartet' && <Quartet {...{ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
       {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq }} />}
+      {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
       {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }} />}
     </main>
 
@@ -148,6 +177,8 @@ export default function App() {
     {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: 'Jazz' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
     {eMus != null && (() => { const s = M.find(x => x.id === eMus); return s ? <FModal t="Edit Arrangement" sub={`Update “${s.title}”`} onX={() => sEMus(null)} onOk={updM} fs={[{ k: 'title', l: 'Title', rq: 1, df: s.title }, { k: 'arranger', l: 'Arranger / Composer', df: s.arranger || '' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: s.category }, { k: 'pages', l: 'Pages', ty: 'num', df: s.pages }, { k: 'size', l: 'File size (MB)', ty: 'num', df: s.file_size_mb }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: s.cloud_only ? 'Cloud only' : 'Sync to iPads' }]} /> : null })()}
     {eInq != null && (() => { const inq = I.find(x => x.id === eInq); return inq ? <FModal t="Edit Booking Inquiry" sub={`Update ${inq.contact_name}’s inquiry`} onX={() => sEInq(null)} onOk={updI} fs={[{ k: 'contact', l: 'Contact name', rq: 1, df: inq.contact_name }, { k: 'org', l: 'Organization', rq: 1, df: inq.organization || '' }, { k: 'phone', l: 'Phone', df: inq.phone || '' }, { k: 'email', l: 'Email', df: inq.email || '' }, { k: 'eventDate', l: 'Event date', ty: 'date', df: inq.event_date || '' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: inq.event_type }, { k: 'expectedDonation', l: 'Expected donation to TMC ($)', ty: 'num', df: inq.expected_donation }, { k: 'notes', l: 'Notes', ty: 'area', df: inq.notes || '' }]} /> : null })()}
+    {shP && <FModal t="Add a Prospect" sub="A local group to introduce the quartet to" onX={() => sShP(false)} onOk={addP} fs={PFIELDS()} />}
+    {eP != null && (() => { const pr = P.find(x => x.id === eP); return pr ? <FModal t="Edit Prospect" sub={pr.organization} onX={() => sEP(null)} onOk={updP} fs={PFIELDS(pr)} /> : null })()}
     {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti }} />}
   </div>
 }
@@ -360,6 +391,76 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
   </div>
 }
 
+/* ---------- prospects (CRM) ---------- */
+function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }) {
+  const statuses = [['all', 'All'], ['prospect', 'Prospect'], ['contacted', 'Contacted'], ['interested', 'Interested'], ['booked', 'Booked'], ['passed', 'Passed']]
+  const stars = n => '★★★★★'.slice(0, Math.max(0, Math.min(5, n || 0)))
+  const composeP = x => sEmail({ lead: { contact_name: x.organizer_name || '', organization: x.organization, email: x.email, status: x.status } })
+
+  if (sPro) {
+    const x = P.find(p => p.id === sPro); if (!x) return null
+    const ps = PS[x.status] || PS.prospect
+    return <div className="fade">
+      <BackBtn onClick={() => sSPro(null)} />
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ background: PTC[x.org_type] || G.purple, padding: '24px 26px', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div><h2 className="serif" style={{ fontSize: 24, fontWeight: 700 }}>{x.organization}</h2><div style={{ fontSize: 13, opacity: .92, marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}><span>{x.org_type}</span>{x.city && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{x.city}</span>}</div></div>
+          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, color: '#FDE68A', letterSpacing: 1 }} title={`Fit ${x.fit_score}/5`}>{stars(x.fit_score)}</div><div style={{ marginTop: 6 }}><Pill bg="rgba(255,255,255,.2)" fg="#fff">{ps.l}</Pill></div></div>
+        </div>
+        <div style={{ padding: 26 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginBottom: 18 }}>
+            <Stat ic={<Users size={16} />} l="Contact" v={x.organizer_name ? `${x.organizer_name}${x.organizer_role ? ` · ${x.organizer_role}` : ''}` : '—'} />
+            <Stat ic={<Phone size={16} />} l="Phone" v={x.phone || '—'} />
+            <Stat ic={<Mail size={16} />} l="Email" v={x.email || '— (not public — call to confirm)'} />
+            <Stat ic={<Globe size={16} />} l="Website" v={x.website ? <a href={x.website} target="_blank" rel="noreferrer" style={{ color: '#7C3AED' }}>{x.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a> : '—'} />
+          </div>
+          {x.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf8ff', padding: 15, borderRadius: 12, marginBottom: 16 }}>{x.notes}</div>}
+          {x.source && <div style={{ fontSize: 11.5, color: '#a99fc8', marginBottom: 18 }}>Source: <a href={x.source} target="_blank" rel="noreferrer" style={{ color: '#9b8fc0' }}>{x.source.replace(/^https?:\/\//, '').slice(0, 60)}</a></div>}
+          <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
+            <Btn grad={G.purple} onClick={() => composeP(x)}><Mail size={16} />Compose Email</Btn>
+            {x.status === 'prospect' && <Btn ghost onClick={() => updPS(x.id, 'contacted')}><Check size={16} />Mark Contacted</Btn>}
+            {x.status !== 'interested' && x.status !== 'booked' && <Btn ghost onClick={() => updPS(x.id, 'interested')}>Mark Interested</Btn>}
+            <Btn grad={G.green} onClick={() => convP(x)}><Send size={16} />Convert to Booking</Btn>
+            <Btn ghost onClick={() => sEP(x.id)}><Pencil size={16} />Edit</Btn>
+            {x.status !== 'passed' && <Btn ghost danger onClick={() => updPS(x.id, 'passed')}>Pass</Btn>}
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  const fd = P.filter(x => (pf === 'all' || x.status === pf) && (ptf === 'all' || x.org_type === ptf) && (!pq || [x.organization, x.city, x.organizer_name, x.org_type].some(v => (v || '').toLowerCase().includes(pq.toLowerCase()))))
+  const byType = PTYPES.map(t => [t, P.filter(x => x.org_type === t).length]).filter(([, n]) => n)
+  const active = P.filter(x => x.status !== 'passed').length
+
+  return <div className="fade">
+    <Header title="Prospects" sub="Local Houston-area groups that book a quartet like ours." action={{ label: 'Add Prospect', on: () => sShP(true) }} />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 18 }}>
+      <div className="card" style={{ padding: 16 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#a99fc8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Active Targets</div><div style={{ fontSize: 28, fontWeight: 800, marginTop: 6 }}>{active}</div></div>
+      {byType.map(([t, n]) => <div key={t} className="card lift" style={{ padding: 16, cursor: 'pointer' }} onClick={() => sPtf(ptf === t ? 'all' : t)}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconChip grad={PTC[t]} size={30}><Target size={15} /></IconChip><div style={{ fontSize: 11.5, fontWeight: 700, color: '#6b5b8f', lineHeight: 1.15 }}>{t}</div></div><div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{n}</div></div>)}
+    </div>
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <Filter opts={statuses} val={pf} set={sPf} />
+      <div style={{ flex: 1, minWidth: 200, position: 'relative', marginBottom: 18 }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#b6abd4' }}><Search size={17} /></span><input value={pq} onChange={e => sPq(e.target.value)} placeholder="Search org, city, or contact…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e6dffa', fontSize: 13.5, background: '#fff' }} /></div>
+    </div>
+    {ptf !== 'all' && <div style={{ marginBottom: 14, fontSize: 12.5 }}><Pill bg="#EDE9FE" fg="#7C3AED">{ptf}</Pill> <button onClick={() => sPtf('all')} style={{ fontSize: 12, color: '#a99fc8', fontWeight: 700 }}>clear type filter</button></div>}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 12 }}>{fd.map(x => { const ps = PS[x.status] || PS.prospect; return <div key={x.id} className="card lift" onClick={() => sSPro(x.id)} style={{ padding: 16, cursor: 'pointer' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <IconChip grad={PTC[x.org_type] || G.purple} size={40}><Target size={18} /></IconChip>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.organization}</div>
+          <div style={{ fontSize: 11.5, color: '#a99fc8', marginTop: 2 }}>{x.org_type}{x.city ? ` · ${x.city}` : ''}</div>
+        </div>
+        <Pill bg={ps.bg} fg={ps.fg}>{ps.l}</Pill>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 8 }}>
+        <div style={{ fontSize: 12, color: '#6b5b8f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.organizer_name || x.email || x.phone || 'No contact yet'}</div>
+        <div style={{ fontSize: 13, color: '#F59E0B', letterSpacing: 1, flexShrink: 0 }} title={`Fit ${x.fit_score}/5`}>{stars(x.fit_score)}</div>
+      </div>
+    </div> })}{!fd.length && <Empty>No prospects in this view.</Empty>}</div>
+  </div>
+}
+
 /* ---------- events ---------- */
 function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const ok = yc >= 4
@@ -409,7 +510,7 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
   const isFollowup = !isAvail && !isProposal
   const lead = email.lead
   const ev = email.availability || email.proposal
-  const defType = isFollowup ? (lead.status === 'contacted' ? 'followup' : lead.status === 'confirmed' ? 'confirmation' : lead.status === 'lost' ? 'thanks' : 'outreach') : null
+  const defType = isFollowup ? (lead.status === 'prospect' ? 'intro' : lead.status === 'contacted' ? 'followup' : lead.status === 'confirmed' ? 'confirmation' : lead.status === 'lost' ? 'thanks' : 'outreach') : null
   const [type, sType] = useState(defType)
   const built = useMemo(() => isAvail ? buildAvailabilityEmail(ev) : isProposal ? buildProposalEmail(email.proposal, email.songs) : buildEmail(type, lead), [type, isAvail, isProposal, lead, ev, email.songs, email.proposal])
   const [subject, sSubject] = useState(built.subject)

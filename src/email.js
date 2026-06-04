@@ -51,6 +51,7 @@ function detailCard(rows, accent) {
 
 // ---- Templates -----------------------------------------------------------------
 export const TEMPLATES = {
+  intro: { label: 'Cold Intro', accent: ['#7C3AED', '#EC4899'], hint: 'Introduce the quartet to a new prospect' },
   outreach: { label: 'Initial Outreach', accent: ['#7C3AED', '#EC4899'], hint: 'Warm first reply to a new inquiry' },
   followup: { label: 'Gentle Follow-up', accent: ['#06B6D4', '#3B82F6'], hint: 'Friendly nudge if you haven’t heard back' },
   confirmation: { label: 'Booking Confirmation', accent: ['#10B981', '#06B6D4'], hint: 'Lock in the details once confirmed' },

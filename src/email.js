@@ -5,7 +5,8 @@
 
 const SIGNATURE_NAME = 'Beth';
 const SIGNATURE_ROLE = 'Manager, The Masterpieces';
-const SIGNATURE_TAG = 'A vocal quartet for life’s most meaningful moments';
+const SIGNATURE_TAG = 'A mixed quartet with piano accompaniment — representing Texas Master Chorale';
+const TAX_NOTE = 'Our performance fee is simply a tax-deductible donation to Texas Master Chorale.';
 
 const fmtDate = (d) => {
   if (!d) return 'a date that works for you';
@@ -23,13 +24,14 @@ function shell(bodyHtml, accent = ['#7C3AED', '#EC4899']) {
     <div style="background:linear-gradient(135deg,${accent[0]},${accent[1]});padding:34px 32px 30px;text-align:center">
       <div style="display:inline-block;width:54px;height:54px;line-height:54px;border-radius:16px;background:rgba(255,255,255,.18);color:#fff;font-size:26px;font-weight:700;font-family:Georgia,serif">M</div>
       <div style="margin-top:14px;color:#fff;font-size:22px;font-weight:700;letter-spacing:.3px;font-family:Georgia,serif">The Masterpieces</div>
-      <div style="margin-top:4px;color:rgba(255,255,255,.85);font-size:12px;letter-spacing:1.5px;text-transform:uppercase">Vocal Quartet</div>
+      <div style="margin-top:4px;color:rgba(255,255,255,.85);font-size:12px;letter-spacing:1.5px;text-transform:uppercase">Mixed Quartet</div>
     </div>
     <div style="padding:32px">${bodyHtml}</div>
     <div style="padding:22px 32px;background:#faf8ff;border-top:1px solid #eee;text-align:center">
       <div style="font-size:15px;font-weight:700;color:#1f2937">${SIGNATURE_NAME}</div>
       <div style="font-size:12.5px;color:#7C3AED;font-weight:600">${SIGNATURE_ROLE}</div>
       <div style="font-size:11.5px;color:#9ca3af;margin-top:8px;font-style:italic">${SIGNATURE_TAG}</div>
+      <div style="font-size:10.5px;color:#b6abd4;margin-top:6px">${TAX_NOTE}</div>
     </div>
   </div>
 </div>`;
@@ -77,15 +79,15 @@ export function buildEmail(type, lead) {
       ``,
       `  Event:    ${evType}`,
       `  Date:     ${when}`,
-      ...(donation ? [`  Donation: ${donation}`] : []),
+      ...(donation ? [`  Donation: ${donation} (tax-deductible to Texas Master Chorale)`] : []),
       ``,
-      `Please let me know if anything looks off, or if there are particular pieces you'd love us to include. We'll arrive early to set up and warm up.`,
+      `Please let me know if anything looks off, or if there are particular pieces you'd love us to include — jazz, swing, pop, or something seasonal. We'll arrive early to set up the piano and warm up.`,
       `We can't wait to sing for you.`,
     ];
     const rows = [['Event', evType], ['Date', when]];
-    if (donation) rows.push(['Donation', donation]);
+    if (donation) rows.push(['Donation', `${donation} (tax-deductible)`]);
     if (lead.phone) rows.push(['Contact', lead.phone]);
-    html = shell(p(`Hi ${first(name)},`) + p(`Wonderful news — we're all set! <strong>The Masterpieces</strong> are confirmed to perform for <strong>${org}</strong>. Here's what we have on file:`) + detailCard(rows, accent) + p(`Please let me know if there are particular pieces you'd love us to include. We'll arrive early to set up and warm up.`) + p(`We can't wait to sing for you. 🎵`), accent);
+    html = shell(p(`Hi ${first(name)},`) + p(`Wonderful news — we're all set! <strong>The Masterpieces</strong> are confirmed to perform for <strong>${org}</strong>. Here's what we have on file:`) + detailCard(rows, accent) + p(`Please let me know if there are particular pieces you'd love us to include — jazz, swing, pop, or something seasonal. We'll arrive early to set up the piano and warm up.`) + p(`As a reminder, ${TAX_NOTE.charAt(0).toLowerCase() + TAX_NOTE.slice(1)}`) + p(`We can't wait to sing for you. 🎵`), accent);
   } else if (type === 'thanks') {
     subject = `Thank you from The Masterpieces`;
     lines = [
@@ -99,12 +101,13 @@ export function buildEmail(type, lead) {
     subject = `The Masterpieces — thank you for reaching out!`;
     lines = [
       `Hi ${first(name)},`,
-      `Thank you so much for thinking of The Masterpieces for ${evType === 'your event' ? 'your event' : evType} at ${org}! We're a four-voice quartet that loves bringing rich, harmony-driven music to celebrations, services, and gatherings of every kind.`,
+      `Thank you so much for thinking of The Masterpieces for ${evType === 'your event' ? 'your event' : evType} at ${org}! We're a mixed quartet with piano accompaniment, representing Texas Master Chorale for events where a full chorus isn't feasible.`,
+      `We sing jazz, swing, and pop from the 1930s right up to today, plus seasonal Christmas and patriotic favorites — and we'll happily tailor the program to your event.`,
       ...(lead.event_date ? [`I see you're looking at ${when} — I'd be glad to check our calendar and put together a few thoughts on a program.`] : [`Whenever you have a date in mind, I'd be glad to check our calendar and sketch out a program.`]),
-      `Could you share a little about the occasion and how long you'd like us to sing? I'll follow up with everything you need.`,
+      `Could you share a little about the occasion and how long you'd like us to sing? ${TAX_NOTE}`,
       `Looking forward to it!`,
     ];
-    html = shell(p(`Hi ${first(name)},`) + p(`Thank you so much for thinking of <strong>The Masterpieces</strong> for <strong>${evType}</strong> at <strong>${org}</strong>! We're a four-voice quartet that loves bringing rich, harmony-driven music to celebrations, services, and gatherings of every kind.`) + p(lead.event_date ? `I see you're looking at <strong>${when}</strong> — I'd be glad to check our calendar and put together a few thoughts on a program.` : `Whenever you have a date in mind, I'd be glad to check our calendar and sketch out a program.`) + p(`Could you share a little about the occasion and how long you'd like us to sing?`) + button('Let’s find a date', accent), accent);
+    html = shell(p(`Hi ${first(name)},`) + p(`Thank you so much for thinking of <strong>The Masterpieces</strong> for <strong>${evType}</strong> at <strong>${org}</strong>! We're a mixed quartet with piano accompaniment, representing <strong>Texas Master Chorale</strong> for events where a full chorus isn't feasible.`) + p(`We sing jazz, swing, and pop from the 1930s right up to today, plus seasonal Christmas and patriotic favorites — and we'll happily tailor the program to your event.`) + p(lead.event_date ? `I see you're looking at <strong>${when}</strong> — I'd be glad to check our calendar and put together a few thoughts on a program.` : `Whenever you have a date in mind, I'd be glad to check our calendar and sketch out a program.`) + p(`Could you share a little about the occasion and how long you'd like us to sing? ${TAX_NOTE}`) + button('Let’s find a date', accent), accent);
   }
 
   const text = `${lines.join('\n')}\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}\n${SIGNATURE_TAG}`;

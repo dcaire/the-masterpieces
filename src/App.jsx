@@ -117,7 +117,7 @@ export default function App() {
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, cursor: 'pointer' }} onClick={() => nav('dashboard')}>
           <Logo size={38} />
-          <div><div className="serif" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1 }}>The Masterpieces</div><div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.18em', color: '#a99fc8', textTransform: 'uppercase', marginTop: 3 }}>Vocal Quartet</div></div>
+          <div><div className="serif" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1 }}>The Masterpieces</div><div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.18em', color: '#a99fc8', textTransform: 'uppercase', marginTop: 3 }}>Mixed Quartet</div></div>
         </div>
         <nav style={{ display: 'flex', gap: 3, background: '#f1ecfb', padding: 4, borderRadius: 13 }}>{tabs.map(([id, l, Ic]) => <button key={id} onClick={() => nav(id)} style={{ padding: '8px 15px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: tab === id ? '#fff' : '#7a6fa0', background: tab === id ? G.purple : 'transparent', boxShadow: tab === id ? '0 6px 16px rgba(124,58,237,.3)' : 'none', transition: 'all .2s' }}><Ic size={15} />{l}</button>)}</nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -137,8 +137,8 @@ export default function App() {
 
     {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy }} />}
     {shS && <FModal t="Add a Singer" sub="Add a core member or guest singer" onX={() => sShS(false)} onOk={addS} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: 'member' }]} />}
-    {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'expectedDonation', l: 'Expected donation ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
-    {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Gospel', 'Classical', 'Hymn', 'Contemporary', 'Holiday', 'Spiritual', 'Other'], df: 'Gospel' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
+    {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'expectedDonation', l: 'Expected donation to TMC ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
+    {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: 'Jazz' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
     {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti }} />}
   </div>
 }
@@ -160,9 +160,13 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }
     { l: 'Pipeline', v: $(pipe), s: `${I.filter(i => i.status !== 'lost').length} active leads`, grad: G.green, ic: <Dollar size={20} />, go: 'bookings' },
   ]
   return <div className="fade">
-    <div style={{ marginBottom: 26 }}>
+    <div style={{ marginBottom: 18 }}>
       <h1 className="serif" style={{ fontSize: 30, fontWeight: 800 }}>{greet}, Beth 👋</h1>
       <p style={{ color: '#8b7fb0', fontSize: 14.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
+    </div>
+    <div className="card" style={{ padding: '14px 18px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(135deg,#faf5ff,#fff)' }}>
+      <IconChip grad={G.purple} size={38}><Sparkle size={18} /></IconChip>
+      <div style={{ fontSize: 12.5, color: '#6b5b8f', lineHeight: 1.5 }}><b style={{ color: '#7C3AED' }}>A mixed quartet with piano accompaniment</b> representing <b>Texas Master Chorale</b> when a full chorus isn’t feasible — jazz, swing & pop from the 1930s to today, plus Christmas and patriotic. Fees are a tax-deductible donation to TMC.</div>
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
       {cards.map((c, i) => <div key={i} className="card lift" onClick={() => nav(c.go)} style={{ padding: 20, cursor: 'pointer' }}>
@@ -209,7 +213,7 @@ function Quartet({ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS 
     <span style={{ color: '#d6cdec' }}><Arrow size={18} /></span>
   </div> }
   return <div className="fade">
-    <Header title="The Quartet" sub={`${core.length} core voices${guests.length ? ` · ${guests.length} guest singers` : ''}`} action={{ label: 'Add Singer', on: () => sShS(true) }} />
+    <Header title="The Quartet" sub={`${core.length} core voices${guests.length ? ` · ${guests.length} guest singers` : ''} · with piano accompaniment`} action={{ label: 'Add Singer', on: () => sShS(true) }} />
     <Filter opts={filt} val={rf} set={sRf} />
     {showCore && <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 12px' }}><Sparkle size={16} color="#7C3AED" /><span style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>Core Quartet</span></div>

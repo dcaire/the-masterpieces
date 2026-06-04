@@ -56,3 +56,4 @@ export const Arrow = (p) => <I {...p}><path d="M5 12h14M13 6l6 6-6 6" /></I>;
 export const Search = (p) => <I {...p}><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></I>;
 export const Wave = (p) => <I {...p}><path d="M2 12c2 0 2-5 4-5s2 10 4 10 2-13 4-13 2 8 4 8 2-3 4-3" /></I>;
 export const Dollar = (p) => <I {...p}><path d="M12 2v20M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.8 7 7s2.2 3 5 3.5 5 1.4 5 3.5-2.2 3.5-5 3.5-5-1.1-5-3" /></I>;
+export const Pencil = (p) => <I {...p}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></I>;

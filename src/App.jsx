@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { sb } from './sb'
 import { buildEmail, buildAvailabilityEmail, buildProposalEmail, mailto, TEMPLATES } from './email'
-import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Copy, Send, Bell, MapPin, Arrow, Search, Dollar } from './icons'
+import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Copy, Send, Bell, MapPin, Arrow, Search, Dollar, Pencil } from './icons'
 
 /* ---------- helpers ---------- */
 const fmt = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return d || '' } }
@@ -68,6 +68,7 @@ export default function App() {
   const [sInq, sSInq] = useState(null); const [sEv, sSEv] = useState(null); const [sSng, sSSng] = useState(null)
   const [rf, sRf] = useState('all'); const [lf, sLf] = useState('all'); const [mf, sMf] = useState('all'); const [q, sQ] = useState('')
   const [shS, sShS] = useState(false); const [shI, sShI] = useState(false); const [shM, sShM] = useState(false)
+  const [eSng, sESng] = useState(null) // roster id being edited
   const [email, sEmail] = useState(null) // {lead} or {availability:ev}
 
   const noti = m => { sTst(m); setTimeout(() => sTst(null), 3000) }
@@ -99,6 +100,7 @@ export default function App() {
   const logFU = async id => { const t = new Date().toISOString().split('T')[0], n = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]; await sb.from('inquiries').update({ last_follow_up: t, next_follow_up: n }).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, last_follow_up: t, next_follow_up: n } : x)); noti('Follow-up logged · next in 7 days') }
   const addI = async d => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: d.contact, organization: d.org, phone: d.phone, email: d.email, event_date: d.eventDate || null, event_type: d.eventType, expected_donation: d.expectedDonation, notes: d.notes, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); sShI(false); noti('Booking inquiry added') } }
   const addS = async d => { const { data: ins } = await sb.from('roster').insert({ name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type, active: true }).select().single(); if (ins) { sR(p => [...p, ins]); sShS(false); noti(`${d.name} added`) } }
+  const updS = async d => { const id = eSng; const patch = { name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type }; const { error } = await sb.from('roster').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sR(p => p.map(r => r.id === id ? { ...r, ...patch } : r)); sESng(null); noti(`${d.name} updated`) }
   const addM = async d => { const { data: ins } = await sb.from('music_library').insert({ title: d.title, arranger: d.arranger, category: d.category, voice_parts: ['Soprano', 'Alto', 'Tenor', 'Bass'], pages: d.pages, file_size_mb: d.size, cloud_only: d.dest === 'Cloud only' }).select().single(); if (ins) { sM(p => [...p, ins]); sShM(false); noti(`“${d.title}” uploaded${d.dest === 'Cloud only' ? '' : ' & synced to iPads'}`) } }
   const updR = async (eid, rid, resp) => { const ex = A.find(a => a.event_id === eid && a.roster_id === rid); if (ex) { await sb.from('member_availability').update({ response: resp }).eq('id', ex.id); sA(p => p.map(a => a.id === ex.id ? { ...a, response: resp } : a)) } else { const { data: ins } = await sb.from('member_availability').insert({ event_id: eid, roster_id: rid, response: resp }).select().single(); if (ins) sA(p => [...p, ins]) } }
   const togAct = async id => { const s = R.find(r => r.id === id); await sb.from('roster').update({ active: !s.active }).eq('id', id); sR(p => p.map(r => r.id === id ? { ...r, active: !r.active } : r)); noti(`${s.name} ${s.active ? 'set inactive' : 'reactivated'}`) }
@@ -135,8 +137,9 @@ export default function App() {
       {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }} />}
     </main>
 
-    {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy }} />}
+    {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng }} />}
     {shS && <FModal t="Add a Singer" sub="Add a core member or guest singer" onX={() => sShS(false)} onOk={addS} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: 'member' }]} />}
+    {eSng != null && (() => { const s = R.find(r => r.id === eSng); return s ? <FModal t="Edit Singer" sub={`Update ${s.name}’s details`} onX={() => sESng(null)} onOk={updS} fs={[{ k: 'name', l: 'Full name', rq: 1, df: s.name }, { k: 'phone', l: 'Phone', df: s.phone || '' }, { k: 'email', l: 'Email', df: s.email || '' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: s.voice_part }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: s.singer_type }]} /> : null })()}
     {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'expectedDonation', l: 'Expected donation to TMC ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
     {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: 'Jazz' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
     {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti }} />}
@@ -236,7 +239,7 @@ function Quartet({ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS 
   </div>
 }
 
-function SingerDetail({ R, sSng, sSSng, togAct, togTy }) {
+function SingerDetail({ R, sSng, sSSng, togAct, togTy, sESng }) {
   const s = R.find(r => r.id === sSng); if (!s) return null
   const pc = VP[s.voice_part] || VP.Soprano
   return <Modal onX={() => sSSng(null)}>
@@ -249,6 +252,9 @@ function SingerDetail({ R, sSng, sSSng, togAct, togTy }) {
         <Row ic={<Phone size={16} />}>{s.phone || 'No phone on file'}</Row>
         <Row ic={<Mail size={16} />}>{s.email || 'No email on file'}</Row>
         <Row ic={<Clock size={16} />}>Joined {fmt(s.joined_date)}</Row>
+      </div>
+      <div style={{ display: 'flex', gap: 9, marginBottom: 9 }}>
+        <Btn grad={G.purple} onClick={() => { sSSng(null); sESng(s.id) }}><Pencil size={16} />Edit Details</Btn>
       </div>
       <div style={{ display: 'flex', gap: 9 }}>
         <Btn ghost onClick={() => togAct(s.id)}>{s.active ? 'Mark Inactive' : 'Reactivate'}</Btn>

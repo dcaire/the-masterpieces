@@ -1,16 +1,14 @@
 -- The Masterpieces — seed the core quartet.
 -- Run this in the Supabase SQL editor (https://supabase.com/dashboard → your project → SQL Editor).
 --
--- NOTE ON VOICE PARTS: the photo shows two women and two men, so the parts below
--- are a best guess (women on Soprano/Alto, men on Tenor/Bass). If anyone is on a
--- different part, just change the voice_part value before running — or fix it later
--- in the app via the Quartet tab (each singer card → "→ Make ..." / detail view).
+-- Voice parts confirmed by Beth: Sherry Miller (Soprano), Donna White (Alto),
+-- Steve Miller (Tenor), Jim Tucker (Bass).
 --
 -- This only adds the four core members. Phone/email are left blank; fill them in
 -- from the app so the email features (availability requests) can reach everyone.
 
 insert into roster (name, voice_part, singer_type, active, joined_date) values
-  ('Donna White',  'Soprano', 'member', true, current_date),
-  ('Sherry Miller','Alto',    'member', true, current_date),
-  ('Jim Tucker',   'Tenor',   'member', true, current_date),
-  ('Steve Miller', 'Bass',    'member', true, current_date);
+  ('Sherry Miller','Soprano', 'member', true, current_date),
+  ('Donna White',  'Alto',    'member', true, current_date),
+  ('Steve Miller', 'Tenor',   'member', true, current_date),
+  ('Jim Tucker',   'Bass',    'member', true, current_date);

@@ -25,14 +25,19 @@ Deno.serve(async (req: Request) => {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
-  const { to, subject, html, text, replyTo } = body || {};
+  const { to, subject, html, text, replyTo, ping } = body || {};
+
+  const user = Deno.env.get("GMAIL_USER");
+  const pass = Deno.env.get("GMAIL_APP_PASSWORD");
+
+  // Health check: report whether credentials are configured (no email sent).
+  if (ping) return json({ ok: true, configured: !!(user && pass), from: user || null });
+
   const recipients = Array.isArray(to)
     ? to
     : String(to || "").split(",").map((s) => s.trim()).filter(Boolean);
   if (!recipients.length) return json({ error: "No recipients" }, 400);
 
-  const user = Deno.env.get("GMAIL_USER");
-  const pass = Deno.env.get("GMAIL_APP_PASSWORD");
   if (!user || !pass) {
     return json({ error: "Email is not configured yet (missing GMAIL_USER / GMAIL_APP_PASSWORD)." }, 503);
   }

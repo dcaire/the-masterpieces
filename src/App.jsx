@@ -108,6 +108,7 @@ export default function App() {
   const [eInq, sEInq] = useState(null) // inquiry id being edited
   const [email, sEmail] = useState(null) // {lead} or {availability:ev}
   const [P, sP] = useState([]) // prospects (CRM)
+  const [emailCfg, setEmailCfg] = useState('checking'); const [emailFrom, setEmailFrom] = useState('') // Gmail sending status
   const [pf, sPf] = useState('all'); const [ptf, sPtf] = useState('all'); const [pq, sPq] = useState('')
   const [shP, sShP] = useState(false); const [eP, sEP] = useState(null); const [sPro, sSPro] = useState(null)
   const [shEv, sShEv] = useState(false); const [eEv, sEEv] = useState(null); const [shProg, sShProg] = useState(null)
@@ -127,6 +128,8 @@ export default function App() {
     } catch (e) { sErr(e.message || 'Connection failed') }
     sLd(false)
   })() }, [])
+
+  useEffect(() => { (async () => { try { const { data, error } = await sb.functions.invoke('send-email', { body: { ping: true } }); if (error || !data) { setEmailCfg('error'); return } setEmailCfg(data.configured ? 'on' : 'off'); if (data.from) setEmailFrom(data.from) } catch { setEmailCfg('error') } })() }, [])
 
   const aM = useMemo(() => { const o = {}; A.forEach(a => { if (a.event_id != null) (o[a.event_id] ||= {})[a.roster_id] = a.response }); return o }, [A])
   const aMI = useMemo(() => { const o = {}; A.forEach(a => { if (a.inquiry_id != null) (o[a.inquiry_id] ||= {})[a.roster_id] = a.response }); return o }, [A])
@@ -194,7 +197,7 @@ export default function App() {
     </header>
 
     <main style={{ maxWidth: 1180, margin: '0 auto', padding: '30px 22px 70px' }}>
-      {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }} />}
+      {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom }} />}
       {tab === 'ensemble' && <Ensemble {...{ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
       {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel }} />}
@@ -215,7 +218,7 @@ export default function App() {
     {shEv && <FModal t="Add an Event" sub="Schedule a performance" onX={() => sShEv(false)} onOk={addEv} fs={EVFIELDS()} />}
     {eEv != null && (() => { const ev = E.find(x => x.id === eEv); return ev ? <FModal t="Edit Event" sub={ev.title} onX={() => sEEv(null)} onOk={updEv} fs={EVFIELDS(ev)} /> : null })()}
     {shProg != null && (() => { const ev = E.find(x => x.id === shProg); return ev ? <ProgramPicker ev={ev} M={M} onX={() => sShProg(null)} onTog={togProg} /> : null })()}
-    {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti }} />}
+    {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti, emailCfg, emailFrom }} />}
   </div>
 }
 
@@ -269,7 +272,7 @@ function MissionHero() {
 }
 
 /* ---------- dashboard ---------- */
-function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }) {
+function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom }) {
   const hr = new Date().getHours()
   const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
   const nxt = E.filter(e => dU(e.event_date) > 0).sort((a, b) => new Date(a.event_date) - new Date(b.event_date))[0]
@@ -282,8 +285,13 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }
   ]
   return <div className="fade">
     <div style={{ marginBottom: 18 }}>
-      <h1 className="serif" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: '#0d1a30' }}>{greet}, Beth</h1>
-      <p className="ui" style={{ color: '#6e6e82', fontSize: 13.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+        <div>
+          <h1 className="serif" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: '#0d1a30' }}>{greet}, Beth</h1>
+          <p className="ui" style={{ color: '#6e6e82', fontSize: 13.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
+        </div>
+        <EmailStatus cfg={emailCfg} from={emailFrom} />
+      </div>
       <div style={{ marginTop: 10 }}><NoteDots /></div>
     </div>
     <MissionHero />
@@ -639,7 +647,7 @@ function ProgramPicker({ ev, M, onX, onTog }) {
 }
 
 /* ---------- email composer ---------- */
-function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
+function EmailComposer({ email, sEmail, aR, onLogged, noti, emailCfg, emailFrom }) {
   const isAvail = !!email.availability
   const isProposal = !!email.proposal
   const isFollowup = !isAvail && !isProposal
@@ -697,7 +705,7 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
       </div>
     </div>
     <div style={{ padding: '16px 22px', borderTop: '1px solid #efe6d4', display: 'flex', gap: 9, justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
-      <span style={{ fontSize: 11, color: '#8a8598', marginRight: 'auto' }}>Send Now delivers the branded email directly · Open in Mail App sends plain text</span>
+      <div style={{ marginRight: 'auto', display: 'flex', flexDirection: 'column', gap: 5 }}><EmailStatus cfg={emailCfg} from={emailFrom} /><span style={{ fontSize: 10.5, color: '#8a8598' }}>{emailCfg === 'on' ? 'Send Now delivers the branded email directly.' : 'Set up Gmail to enable Send Now · Open in Mail App sends plain text'}</span></div>
       <Btn ghost onClick={() => copy(true)}><Copy size={15} />Copy Formatted</Btn>
       <Btn ghost onClick={openMail}><Mail size={15} />Open in Mail App</Btn>
       <Btn grad={accent} onClick={sendNow}><Send size={15} />{sending ? 'Sending…' : 'Send Now'}</Btn>
@@ -716,6 +724,7 @@ const Header = ({ title, sub, action }) => <div style={{ marginBottom: 22 }}>
 const Filter = ({ opts, val, set }) => <div style={{ display: 'inline-flex', gap: 3, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #efe6d4', marginBottom: 18, flexWrap: 'wrap' }}>{opts.map(([v, l]) => <button key={v} onClick={() => set(v)} style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: val === v ? G.purple : 'transparent', color: val === v ? '#fff' : '#6e6e82', transition: 'all .15s' }}>{l}</button>)}</div>
 const Btn = ({ children, grad, ghost, danger, small, ...p }) => { const isNavy = !ghost && (!grad || grad === G.purple); return <button {...p} className="ui" style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 8, fontSize: small ? 11 : 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, background: ghost ? '#fff' : (grad || G.purple), color: ghost ? (danger ? '#B91C1C' : '#4a4a5e') : (isNavy ? '#e8b430' : '#fff'), border: ghost ? `1px solid ${danger ? '#FECACA' : '#e2d6bd'}` : 'none', boxShadow: ghost ? 'none' : '0 6px 16px rgba(13,26,48,.18)' }}>{children}</button> }
 const BackBtn = ({ onClick }) => <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1c3564', fontSize: 13.5, fontWeight: 700, marginBottom: 18 }}><Arrow size={16} style={{ transform: 'rotate(180deg)' }} />Back</button>
+const EmailStatus = ({ cfg, from }) => { const map = { checking: ['#f0e8d6', '#6e6e82', 'Checking email…'], on: ['#D1FAE5', '#047857', `Email connected${from ? ' · ' + from : ''}`], off: ['#FEF3C7', '#B45309', 'Email not configured'], error: ['#FEE2E2', '#B91C1C', 'Email check failed'] }; const [bg, fg, label] = map[cfg] || map.checking; return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', borderRadius: 999, background: bg, color: fg, fontSize: 11.5, fontWeight: 700 }}><Mail size={13} />{label}</span> }
 const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#8a8598', fontSize: 13.5, gridColumn: '1/-1' }}>
   <svg width="22" height="34" viewBox="0 0 38 62" style={{ display: 'block', margin: '0 auto 12px', opacity: .55 }}><path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke="#c9a23a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
   {children}

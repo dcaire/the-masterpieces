@@ -9,6 +9,7 @@ const fmtLong = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString
 const dU = d => Math.ceil((new Date(d + 'T12:00:00') - new Date()) / 86400000)
 const $ = n => '$' + Number(n || 0).toLocaleString()
 const ini = n => (n || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+const byEvDate = (a, b) => new Date(a.event_date || '2999-12-31') - new Date(b.event_date || '2999-12-31')
 
 /* ---------- design tokens ---------- */
 const G = {
@@ -46,6 +47,14 @@ const PFIELDS = (pr = {}) => [
   { k: 'website', l: 'Website', df: pr.website || '' },
   { k: 'fit', l: 'Fit (1–5)', ty: 'num', df: pr.fit_score || 3 },
   { k: 'notes', l: 'Notes', ty: 'area', df: pr.notes || '' },
+]
+const EVFIELDS = (ev = {}) => [
+  { k: 'title', l: 'Event title', rq: 1, df: ev.title || '' },
+  { k: 'date', l: 'Date', ty: 'date', df: ev.event_date || '' },
+  { k: 'time', l: 'Time (e.g. 2:00 PM)', df: ev.event_time || '' },
+  { k: 'venue', l: 'Venue', df: ev.venue || '' },
+  { k: 'fee', l: 'Fee ($)', ty: 'num', df: ev.donation || 0 },
+  { k: 'status', l: 'Status', ty: 'sel', opts: ['confirmed', 'pending', 'upcoming', 'lost'], df: ev.status || 'confirmed' },
 ]
 
 const css = `
@@ -96,6 +105,7 @@ export default function App() {
   const [P, sP] = useState([]) // prospects (CRM)
   const [pf, sPf] = useState('all'); const [ptf, sPtf] = useState('all'); const [pq, sPq] = useState('')
   const [shP, sShP] = useState(false); const [eP, sEP] = useState(null); const [sPro, sSPro] = useState(null)
+  const [shEv, sShEv] = useState(false); const [eEv, sEEv] = useState(null); const [shProg, sShProg] = useState(null)
 
   const noti = m => { sTst(m); setTimeout(() => sTst(null), 3000) }
   const nav = t => { sTab(t); sSInq(null); sSEv(null); sSSng(null); sSPro(null) }
@@ -139,7 +149,10 @@ export default function App() {
   const updP = async d => { const id = eP; const patch = { organization: d.org, org_type: d.type, city: d.city, organizer_name: d.organizer, organizer_role: d.role, email: d.email, phone: d.phone, website: d.website, fit_score: Number(d.fit) || 3, notes: d.notes }; const { error } = await sb.from('prospects').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEP(null); noti('Prospect updated') }
   const updPS = async (id, st) => { const t = new Date().toISOString().split('T')[0]; const patch = st === 'contacted' ? { status: st, last_contacted: t } : { status: st }; await sb.from('prospects').update(patch).eq('id', id); sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); noti(`Marked “${PS[st]?.l || st}”`) }
   const convP = async x => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: x.organizer_name || x.organization, organization: x.organization, phone: x.phone, email: x.email, event_type: 'Other', expected_donation: 0, notes: `From prospect (${x.org_type}${x.city ? ', ' + x.city : ''}).${x.notes ? ' ' + x.notes : ''}`, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); await sb.from('prospects').update({ status: 'interested' }).eq('id', x.id); sP(p => p.map(y => y.id === x.id ? { ...y, status: 'interested' } : y)); sSPro(null); sTab('bookings'); noti('Added to Bookings as a new lead') } }
-  const convE = async inq => { const title = `${inq.event_type || 'Performance'}${inq.organization ? ' · ' + inq.organization : ''}`; const { data: ins, error } = await sb.from('events').insert({ title, event_date: inq.event_date || null, event_time: '', venue: inq.organization || '', donation: inq.expected_donation || 0, status: 'confirmed', songs_planned: [] }).select().single(); if (error || !ins) { noti('Could not create event — try again'); return } sE(p => [...p, ins].sort((a, b) => new Date(a.event_date || '2999-12-31') - new Date(b.event_date || '2999-12-31'))); sSInq(null); sTab('events'); noti('Event created from booking') }
+  const convE = async inq => { const title = `${inq.event_type || 'Performance'}${inq.organization ? ' · ' + inq.organization : ''}`; const { data: ins, error } = await sb.from('events').insert({ title, event_date: inq.event_date || null, event_time: '', venue: inq.organization || '', donation: inq.expected_donation || 0, status: 'confirmed', songs_planned: [] }).select().single(); if (error || !ins) { noti('Could not create event — try again'); return } sE(p => [...p, ins].sort(byEvDate)); sSInq(null); sTab('events'); noti('Event created from booking') }
+  const addEv = async d => { const { data: ins, error } = await sb.from('events').insert({ title: d.title, event_date: d.date || null, event_time: d.time, venue: d.venue, donation: d.fee, status: d.status, songs_planned: [] }).select().single(); if (error || !ins) { noti('Could not save — try again'); return } sE(p => [...p, ins].sort(byEvDate)); sShEv(false); noti('Event added') }
+  const updEv = async d => { const id = eEv; const patch = { title: d.title, event_date: d.date || null, event_time: d.time, venue: d.venue, donation: d.fee, status: d.status }; const { error } = await sb.from('events').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sE(p => p.map(x => x.id === id ? { ...x, ...patch } : x).sort(byEvDate)); sEEv(null); noti('Event updated') }
+  const togProg = async (eid, sid) => { const ev = E.find(e => e.id === eid); const cur = ev.songs_planned || []; const next = cur.includes(sid) ? cur.filter(x => x !== sid) : [...cur, sid]; const { error } = await sb.from('events').update({ songs_planned: next }).eq('id', eid); if (error) { noti('Save failed — try again'); return } sE(p => p.map(x => x.id === eid ? { ...x, songs_planned: next } : x)) }
 
   if (ld) return <Splash />
   if (err) return <ErrorView err={err} />
@@ -174,7 +187,7 @@ export default function App() {
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
       {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
-      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }} />}
+      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg }} />}
     </main>
 
     {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng }} />}
@@ -186,6 +199,9 @@ export default function App() {
     {eInq != null && (() => { const inq = I.find(x => x.id === eInq); return inq ? <FModal t="Edit Booking Inquiry" sub={`Update ${inq.contact_name}’s inquiry`} onX={() => sEInq(null)} onOk={updI} fs={[{ k: 'contact', l: 'Contact name', rq: 1, df: inq.contact_name }, { k: 'org', l: 'Organization', rq: 1, df: inq.organization || '' }, { k: 'phone', l: 'Phone', df: inq.phone || '' }, { k: 'email', l: 'Email', df: inq.email || '' }, { k: 'eventDate', l: 'Event date', ty: 'date', df: inq.event_date || '' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: inq.event_type }, { k: 'expectedDonation', l: 'Expected fee ($)', ty: 'num', df: inq.expected_donation }, { k: 'notes', l: 'Notes', ty: 'area', df: inq.notes || '' }]} /> : null })()}
     {shP && <FModal t="Add a Prospect" sub="A local group to introduce the ensemble to" onX={() => sShP(false)} onOk={addP} fs={PFIELDS()} />}
     {eP != null && (() => { const pr = P.find(x => x.id === eP); return pr ? <FModal t="Edit Prospect" sub={pr.organization} onX={() => sEP(null)} onOk={updP} fs={PFIELDS(pr)} /> : null })()}
+    {shEv && <FModal t="Add an Event" sub="Schedule a performance" onX={() => sShEv(false)} onOk={addEv} fs={EVFIELDS()} />}
+    {eEv != null && (() => { const ev = E.find(x => x.id === eEv); return ev ? <FModal t="Edit Event" sub={ev.title} onX={() => sEEv(null)} onOk={updEv} fs={EVFIELDS(ev)} /> : null })()}
+    {shProg != null && (() => { const ev = E.find(x => x.id === shProg); return ev ? <ProgramPicker ev={ev} M={M} onX={() => sShProg(null)} onTog={togProg} /> : null })()}
     {email && <EmailComposer {...{ email, sEmail, aR, onLogged: logFU, noti }} />}
   </div>
 }
@@ -511,10 +527,10 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 }
 
 /* ---------- events ---------- */
-function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
+function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg }) {
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const ok = yc >= 4
     return <div className="fade">
-      <BackBtn onClick={() => sSEv(null)} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><BackBtn onClick={() => sSEv(null)} /><Btn ghost small onClick={() => sEEv(ev.id)}><Pencil size={14} />Edit Event</Btn></div>
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ background: ok ? G.green : pc ? G.amber : 'linear-gradient(135deg,#F87171,#EF4444)', padding: '24px 26px', color: '#fff' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -529,7 +545,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><Avatar name={m.name} part={m.voice_part} type={m.singer_type} size={36} /><div><div style={{ fontSize: 13.5, fontWeight: 700 }}>{m.name}</div><div style={{ display: 'flex', gap: 5, marginTop: 2 }}><Pill bg={pcv.bg} fg={pcv.fg}>{m.voice_part}</Pill>{m.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">guest</Pill>}</div></div></div>
             <div style={{ display: 'flex', gap: 5 }}>{['yes', 'pending', 'no'].map(r => { const c = RESP[r]; const on = (ea[m.id] || 'pending') === r; return <button key={r} onClick={() => updR(ev.id, m.id, r)} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 11.5, fontWeight: 700, textTransform: 'capitalize', background: on ? c.fg : '#eee', color: on ? '#fff' : '#9ca3af' }}>{r}</button> })}</div>
           </div> })}</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShProg(ev.id)}><Plus size={14} />Edit Program</Btn>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf5e9', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f0e8d6' : '#D1FAE5'} fg={s.cloud_only ? '#6e6e82' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
         </div>
       </div>
@@ -537,7 +553,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
   }
 
   return <div className="fade">
-    <Header title="Events" sub="Confirm the ensemble’s availability before you commit to a date." />
+    <Header title="Events" sub="Confirm the ensemble’s availability before you commit to a date." action={{ label: 'Add Event', on: () => sShEv(true) }} />
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{E.map(ev => { const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pcn = Object.values(ea).filter(r => r === 'pending').length; const tot = aR.length || 1; const d = dU(ev.event_date); const ok = yc >= 4
     return <div key={ev.id} className="card lift" onClick={() => sSEv(ev.id)} style={{ padding: 19, cursor: 'pointer', display: 'flex', gap: 18, alignItems: 'center' }}>
       <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}>{ev.event_date ? <><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1a1a2e' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div></> : <div className="serif" style={{ fontSize: 15, fontWeight: 700, color: '#8a8598' }}>TBD</div>}</div>
@@ -550,6 +566,27 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
       <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#1c3564' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 && ev.event_date ? '#EF4444' : '#8a8598' }}>{!ev.event_date ? 'Set date' : d > 0 ? `${d} days` : 'Past'}</div></div>
     </div> })}{!E.length && <Empty>No events scheduled.</Empty>}</div>
   </div>
+}
+
+/* ---------- program picker (build an event's set list) ---------- */
+function ProgramPicker({ ev, M, onX, onTog }) {
+  const [q, setQ] = useState('')
+  const sel = new Set(ev.songs_planned || [])
+  const fd = M.filter(s => !q || s.title.toLowerCase().includes(q.toLowerCase()) || (s.arranger || '').toLowerCase().includes(q.toLowerCase()))
+  return <Modal onX={onX}>
+    <div style={{ background: G.purple, padding: '20px 26px', color: '#fff' }}><h2 className="serif" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>Program</h2><div className="ui" style={{ fontSize: 12, opacity: .9, marginTop: 2 }}>{ev.title} · {sel.size} piece{sel.size === 1 ? '' : 's'} selected</div></div>
+    <div style={{ padding: 22 }}>
+      <div style={{ position: 'relative', marginBottom: 14 }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#a8a3b5' }}><Search size={17} /></span><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search the library…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 11, border: '1px solid #e2d6bd', fontSize: 13.5, background: '#fff' }} /></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 360, overflow: 'auto' }}>
+        {fd.map(s => { const on = sel.has(s.id); return <button key={s.id} onClick={() => onTog(ev.id, s.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 13px', borderRadius: 11, border: `1px solid ${on ? '#20a89a' : '#e2d6bd'}`, background: on ? '#d6f3ef' : '#fff', textAlign: 'left' }}>
+          <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: '#1a1a2e' }}>{s.title}</div><div style={{ fontSize: 11.5, color: '#8a8598' }}>{s.arranger || 'Traditional'} · {s.category}</div></div>
+          <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: on ? '#20a89a' : '#f0e8d6', color: on ? '#fff' : '#8a8598', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{on ? <Check size={15} /> : <Plus size={15} />}</span>
+        </button> })}
+        {!fd.length && <Empty>{M.length ? 'No arrangements match your search.' : 'Your library is empty — add arrangements in the Music tab first.'}</Empty>}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}><Btn grad={G.purple} onClick={onX}><Check size={15} />Done</Btn></div>
+    </div>
+  </Modal>
 }
 
 /* ---------- email composer ---------- */

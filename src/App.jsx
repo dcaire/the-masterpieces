@@ -193,15 +193,43 @@ export default function App() {
 const Splash = () => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}><style>{css}</style><Defs /><div className="mesh" /><div style={{ animation: 'pop .5s ease' }}><Logo size={64} /></div><div style={{ textAlign: 'center', zIndex: 1 }}><div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>The Masterpieces</div><div style={{ fontSize: 13, color: '#6e6e82', marginTop: 5 }}>Tuning up…</div></div></div>
 const ErrorView = ({ err }) => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><style>{css}</style><div className="card" style={{ textAlign: 'center', padding: 40, maxWidth: 380 }}><div style={{ fontSize: 17, fontWeight: 700, color: '#B91C1C' }}>Connection Error</div><div style={{ fontSize: 13, color: '#888', margin: '10px 0 18px' }}>{err}</div><button onClick={() => location.reload()} style={{ padding: '11px 24px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700 }}>Retry</button></div></div>
 
+/* ---------- musical phrase (brand motif) ---------- */
+const MP_NOTES = [
+  [0.20, 0.78, '#7b52c4', 'quarter'], [0.31, 0.60, '#20a89a', 'eighth'],
+  [0.42, 0.44, '#e07830', 'quarter'], [0.53, 0.28, '#d03a6a', 'eighth'],
+  [0.64, 0.44, '#e05545', 'half'], [0.75, 0.60, '#3898d4', 'quarter'],
+  [0.86, 0.30, '#c035a0', 'eighth'],
+]
+const MPNote = ({ x, y, color, type, s }) => <g>
+  <ellipse cx={x} cy={y} rx={5.5 * s} ry={4 * s} fill={type === 'half' ? 'none' : color} stroke={color} strokeWidth={type === 'half' ? 1.5 * s : 0} transform={`rotate(-18 ${x} ${y})`} />
+  <line x1={x + 4.5 * s} y1={y} x2={x + 4.5 * s} y2={y - 22 * s} stroke={color} strokeWidth={1.3 * s} />
+  {type === 'eighth' && <path d={`M ${x + 4.5 * s} ${y - 22 * s} C ${x + 12 * s} ${y - 18 * s} ${x + 14 * s} ${y - 12 * s} ${x + 10 * s} ${y - 8 * s}`} fill="none" stroke={color} strokeWidth={1.2 * s} />}
+</g>
+function MusicalPhrase({ variant = 'dark', vw = 600, vh = 48 }) {
+  const line = variant === 'dark' ? '#e8b430' : '#0d1a30'
+  const clef = variant === 'dark' ? '#f0c850' : '#0d1a30'
+  const lineOp = variant === 'dark' ? 0.3 : 0.16
+  const gap = vh / 6, s = 0.82 * (vh / 50)
+  return <svg viewBox={`0 0 ${vw} ${vh}`} preserveAspectRatio="xMidYMid meet" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    {[1, 2, 3, 4, 5].map(i => <line key={i} x1="0" y1={gap * i} x2={vw} y2={gap * i} stroke={line} strokeWidth="0.6" opacity={lineOp} />)}
+    <g transform={`translate(4 1) scale(${vh / 85})`}><path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke={clef} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></g>
+    {MP_NOTES.map(([px, py, c, t], i) => <MPNote key={i} x={vw * px} y={vh * py} color={c} type={t} s={s} />)}
+  </svg>
+}
+
 /* ---------- mission hero (shows group photo when present at /ensemble.jpg) ---------- */
-const MISSION = <span><b style={{ color: '#1c3564' }}>A mixed vocal ensemble</b> — the energy of a jazz club with the polish of a concert hall. Jazz, swing &amp; pop standards from the 1930s to today, plus Christmas and patriotic favorites, tailored to every occasion.</span>
+const MISSION = <span><b style={{ color: '#e8b430' }}>A mixed vocal ensemble</b> — the energy of a jazz club with the polish of a concert hall. Jazz, swing &amp; pop standards from the 1930s to today, plus Christmas and patriotic favorites, tailored to every occasion.</span>
 function MissionHero() {
   const [hasPhoto, setHasPhoto] = useState(true)
   return <div className="card" style={{ marginBottom: 22, overflow: 'hidden', display: 'grid', gridTemplateColumns: hasPhoto ? '300px 1fr' : '1fr' }}>
-    {hasPhoto && <img src="/ensemble.jpg" alt="The Masterpieces" onError={() => setHasPhoto(false)} style={{ width: '100%', height: '100%', maxHeight: 168, objectFit: 'cover', display: 'block' }} />}
-    <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(135deg,#faf3e6,#fff)' }}>
-      <IconChip grad={G.purple} size={38}><Sparkle size={18} /></IconChip>
-      <div style={{ fontSize: 12.5, color: '#4a4a5e', lineHeight: 1.55 }}>{MISSION}</div>
+    {hasPhoto && <img src="/ensemble.jpg" alt="The Masterpieces" onError={() => setHasPhoto(false)} style={{ width: '100%', height: '100%', maxHeight: 178, objectFit: 'cover', display: 'block' }} />}
+    <div style={{ position: 'relative', padding: '20px 24px 16px', background: '#0d1a30', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 25%, rgba(28,53,100,.6), transparent 65%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 13 }}>
+        <IconChip grad={G.amber} size={38}><Sparkle size={18} /></IconChip>
+        <div style={{ fontSize: 12.5, color: '#e8dfce', lineHeight: 1.6 }}>{MISSION}</div>
+      </div>
+      <div style={{ position: 'relative', marginTop: 14 }}><MusicalPhrase variant="dark" vh={42} /></div>
     </div>
   </div>
 }

@@ -12,16 +12,16 @@ const ini = n => (n || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUppe
 
 /* ---------- design tokens ---------- */
 const G = {
-  purple: 'linear-gradient(135deg,#7C3AED,#EC4899)',
-  teal: 'linear-gradient(135deg,#06B6D4,#3B82F6)',
-  amber: 'linear-gradient(135deg,#F59E0B,#FB7185)',
-  green: 'linear-gradient(135deg,#10B981,#06B6D4)',
+  purple: 'linear-gradient(135deg,#0d1a30,#1c3564)',   // primary (navy)
+  teal: 'linear-gradient(135deg,#20a89a,#3898d4)',
+  amber: 'linear-gradient(135deg,#e8b430,#e07830)',     // gold → copper
+  green: 'linear-gradient(135deg,#20a89a,#1c8f82)',
 }
 const VP = {
-  Soprano: { bg: '#FCE7F3', fg: '#DB2777', bd: '#F9A8D4', grad: 'linear-gradient(135deg,#F472B6,#DB2777)' },
-  Alto: { bg: '#EDE9FE', fg: '#7C3AED', bd: '#C4B5FD', grad: 'linear-gradient(135deg,#A78BFA,#7C3AED)' },
-  Tenor: { bg: '#FEF3C7', fg: '#D97706', bd: '#FCD34D', grad: 'linear-gradient(135deg,#FBBF24,#D97706)' },
-  Bass: { bg: '#CFFAFE', fg: '#0891B2', bd: '#67E8F9', grad: 'linear-gradient(135deg,#22D3EE,#0891B2)' },
+  Soprano: { bg: '#fbe4ec', fg: '#d03a6a', bd: '#f0a8c0', grad: 'linear-gradient(135deg,#e0688f,#d03a6a)' },
+  Alto: { bg: '#fbe7d6', fg: '#c0641f', bd: '#f3bd8e', grad: 'linear-gradient(135deg,#e8924a,#e07830)' },
+  Tenor: { bg: '#d6f3ef', fg: '#178577', bd: '#8fd8cf', grad: 'linear-gradient(135deg,#3cc0b2,#20a89a)' },
+  Bass: { bg: '#eae6fa', fg: '#6a40b0', bd: '#c3acec', grad: 'linear-gradient(135deg,#9670d6,#7b52c4)' },
 }
 const SB = {
   new: { bg: '#DBEAFE', fg: '#1D4ED8' }, contacted: { bg: '#FEF3C7', fg: '#B45309' },
@@ -30,7 +30,7 @@ const SB = {
 const RESP = { yes: { bg: '#D1FAE5', fg: '#047857', bd: '#6EE7B7' }, no: { bg: '#FEE2E2', fg: '#B91C1C', bd: '#FCA5A5' }, pending: { bg: '#FEF3C7', fg: '#B45309', bd: '#FCD34D' } }
 // prospect pipeline statuses + target-market types
 const PS = {
-  prospect: { bg: '#EDE9FE', fg: '#7C3AED', l: 'Prospect' }, contacted: { bg: '#FEF3C7', fg: '#B45309', l: 'Contacted' },
+  prospect: { bg: '#EDE9FE', fg: '#1c3564', l: 'Prospect' }, contacted: { bg: '#FEF3C7', fg: '#B45309', l: 'Contacted' },
   interested: { bg: '#DBEAFE', fg: '#1D4ED8', l: 'Interested' }, booked: { bg: '#D1FAE5', fg: '#047857', l: 'Booked' }, passed: { bg: '#F3F4F6', fg: '#6B7280', l: 'Passed' },
 }
 const PTYPES = ['Service & Social Club', 'Church / Faith', 'Senior Living', 'Club / Venue', 'Other']
@@ -50,19 +50,21 @@ const PFIELDS = (pr = {}) => [
 
 const css = `
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',system-ui,sans-serif;background:#f6f3fc;color:#1f2937;min-height:100vh}
+body{font-family:'EB Garamond',Georgia,serif;background:#fdf8ee;color:#1a1a2e;min-height:100vh}
 .mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
-  radial-gradient(60vw 50vh at 8% -5%,rgba(124,58,237,.16),transparent 60%),
-  radial-gradient(55vw 45vh at 100% 0%,rgba(236,72,153,.14),transparent 55%),
-  radial-gradient(50vw 50vh at 50% 110%,rgba(6,182,212,.12),transparent 60%)}
+  radial-gradient(60vw 50vh at 8% -5%,rgba(232,180,48,.10),transparent 60%),
+  radial-gradient(55vw 45vh at 100% 0%,rgba(28,53,100,.08),transparent 55%),
+  radial-gradient(50vw 50vh at 50% 110%,rgba(32,168,154,.07),transparent 60%)}
 button{cursor:pointer;font-family:inherit;border:none;background:none;color:inherit}
-input,textarea,select{font-family:inherit;outline:none}
-::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-thumb{background:#d8cdf0;border-radius:4px}
-.serif{font-family:'Playfair Display',serif}
-.card{background:#fff;border-radius:18px;border:1px solid #efe9fa;box-shadow:0 4px 22px rgba(124,58,237,.05)}
+input,textarea,select{font-family:'Outfit',system-ui,sans-serif;outline:none}
+::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-thumb{background:#cbb89a;border-radius:4px}
+.serif{font-family:'Cormorant Garamond',Georgia,serif}
+.ui{font-family:'Outfit',system-ui,sans-serif}
+.card{position:relative;background:#fffdf8;border-radius:16px;border:1px solid #efe6d4;box-shadow:0 4px 18px rgba(13,26,48,.06);overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;z-index:3;background:linear-gradient(90deg,#e8b430 0 20%,#e07830 20% 40%,#d03a6a 40% 60%,#20a89a 60% 80%,#7b52c4 80% 100%)}
 .lift{transition:transform .18s ease,box-shadow .18s ease}
-.lift:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(124,58,237,.14)}
-.gtext{background:linear-gradient(135deg,#7C3AED,#EC4899);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lift:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(13,26,48,.13)}
+.gtext{background:linear-gradient(135deg,#0d1a30,#1c3564);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 @keyframes fadeUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
@@ -76,8 +78,8 @@ const Avatar = ({ name, part, type, size = 44 }) => {
 }
 const Badge = ({ s }) => { const c = SB[s] || SB.new; return <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 10.5, fontWeight: 700, background: c.bg, color: c.fg, textTransform: 'capitalize', letterSpacing: '.02em' }}>{s}</span> }
 const Pill = ({ children, bg, fg }) => <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: 10.5, fontWeight: 700, background: bg, color: fg }}>{children}</span>
-const IconChip = ({ grad, children, size = 42 }) => <div style={{ width: size, height: size, borderRadius: 13, background: grad, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(124,58,237,.18)', flexShrink: 0 }}>{children}</div>
-const SectionTitle = ({ children }) => <div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.09em', color: '#9b8fc0', marginBottom: 13 }}>{children}</div>
+const IconChip = ({ grad, children, size = 42 }) => <div style={{ width: size, height: size, borderRadius: 13, background: grad, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(13,26,48,.18)', flexShrink: 0 }}>{children}</div>
+const SectionTitle = ({ children }) => <div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.09em', color: '#6e6e82', marginBottom: 13 }}>{children}</div>
 
 /* ---------- app ---------- */
 export default function App() {
@@ -145,20 +147,24 @@ export default function App() {
 
   return <div style={{ position: 'relative', zIndex: 1 }}>
     <style>{css}</style><Defs /><div className="mesh" />
-    {toast && <div style={{ position: 'fixed', top: 22, right: 22, zIndex: 2000, background: '#1f2937', color: '#fff', padding: '13px 20px', borderRadius: 13, fontSize: 13, fontWeight: 600, boxShadow: '0 14px 40px rgba(0,0,0,.25)', animation: 'slideIn .3s ease', display: 'flex', alignItems: 'center', gap: 9 }}><span style={{ color: '#34D399', display: 'flex' }}><Check size={17} /></span>{toast}</div>}
+    {toast && <div style={{ position: 'fixed', top: 22, right: 22, zIndex: 2000, background: '#1a1a2e', color: '#fff', padding: '13px 20px', borderRadius: 13, fontSize: 13, fontWeight: 600, boxShadow: '0 14px 40px rgba(0,0,0,.25)', animation: 'slideIn .3s ease', display: 'flex', alignItems: 'center', gap: 9 }}><span style={{ color: '#34D399', display: 'flex' }}><Check size={17} /></span>{toast}</div>}
 
-    <header style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(14px)', borderBottom: '1px solid #efe9fa' }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+    <header style={{ position: 'sticky', top: 0, zIndex: 100, background: '#0d1a30', boxShadow: '0 2px 18px rgba(13,26,48,.25)' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 66 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, cursor: 'pointer' }} onClick={() => nav('dashboard')}>
           <Logo size={38} />
-          <div><div className="serif" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1 }}>The Masterpieces</div><div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.18em', color: '#a99fc8', textTransform: 'uppercase', marginTop: 3 }}>Vocal Ensemble</div></div>
+          <div>
+            <div className="ui" style={{ fontSize: 8.5, fontWeight: 300, letterSpacing: '.42em', color: '#e8b430' }}>THE</div>
+            <div className="serif" style={{ fontSize: 19, fontWeight: 700, lineHeight: 1, letterSpacing: '.12em', textTransform: 'uppercase', color: '#fdf8ee' }}>Masterpieces</div>
+          </div>
         </div>
-        <nav style={{ display: 'flex', gap: 3, background: '#f1ecfb', padding: 4, borderRadius: 13 }}>{tabs.map(([id, l, Ic]) => <button key={id} onClick={() => nav(id)} style={{ padding: '8px 15px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: tab === id ? '#fff' : '#7a6fa0', background: tab === id ? G.purple : 'transparent', boxShadow: tab === id ? '0 6px 16px rgba(124,58,237,.3)' : 'none', transition: 'all .2s' }}><Ic size={15} />{l}</button>)}</nav>
+        <nav className="ui" style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,.06)', padding: 4, borderRadius: 11 }}>{tabs.map(([id, l, Ic]) => <button key={id} onClick={() => nav(id)} style={{ padding: '8px 14px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: tab === id ? '#0d1a30' : '#9aa6bd', background: tab === id ? '#e8b430' : 'transparent', transition: 'all .2s' }}><Ic size={14} />{l}</button>)}</nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, fontWeight: 700 }}>Beth</div><div style={{ fontSize: 11, color: '#a99fc8' }}>Manager</div></div>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: G.amber, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, boxShadow: '0 4px 12px rgba(245,158,11,.35)' }}>B</div>
+          <div style={{ textAlign: 'right' }} className="ui"><div style={{ fontSize: 12.5, fontWeight: 600, color: '#fdf8ee' }}>Beth</div><div style={{ fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: '#9aa6bd' }}>Manager</div></div>
+          <div className="serif" style={{ width: 38, height: 38, borderRadius: '50%', background: '#e8b430', color: '#0d1a30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 17 }}>B</div>
         </div>
       </div>
+      <div style={{ display: 'flex', height: 3 }}>{['#e8b430', '#e07830', '#d03a6a', '#20a89a', '#7b52c4'].map(c => <div key={c} style={{ flex: 1, background: c }} />)}</div>
     </header>
 
     <main style={{ maxWidth: 1180, margin: '0 auto', padding: '30px 22px 70px' }}>
@@ -184,18 +190,18 @@ export default function App() {
 }
 
 /* ---------- splash / error ---------- */
-const Splash = () => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}><style>{css}</style><Defs /><div className="mesh" /><div style={{ animation: 'pop .5s ease' }}><Logo size={64} /></div><div style={{ textAlign: 'center', zIndex: 1 }}><div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>The Masterpieces</div><div style={{ fontSize: 13, color: '#9b8fc0', marginTop: 5 }}>Tuning up…</div></div></div>
+const Splash = () => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}><style>{css}</style><Defs /><div className="mesh" /><div style={{ animation: 'pop .5s ease' }}><Logo size={64} /></div><div style={{ textAlign: 'center', zIndex: 1 }}><div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>The Masterpieces</div><div style={{ fontSize: 13, color: '#6e6e82', marginTop: 5 }}>Tuning up…</div></div></div>
 const ErrorView = ({ err }) => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><style>{css}</style><div className="card" style={{ textAlign: 'center', padding: 40, maxWidth: 380 }}><div style={{ fontSize: 17, fontWeight: 700, color: '#B91C1C' }}>Connection Error</div><div style={{ fontSize: 13, color: '#888', margin: '10px 0 18px' }}>{err}</div><button onClick={() => location.reload()} style={{ padding: '11px 24px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700 }}>Retry</button></div></div>
 
 /* ---------- mission hero (shows group photo when present at /ensemble.jpg) ---------- */
-const MISSION = <span><b style={{ color: '#7C3AED' }}>A mixed vocal ensemble</b> — the energy of a jazz club with the polish of a concert hall. Jazz, swing &amp; pop standards from the 1930s to today, plus Christmas and patriotic favorites, tailored to every occasion.</span>
+const MISSION = <span><b style={{ color: '#1c3564' }}>A mixed vocal ensemble</b> — the energy of a jazz club with the polish of a concert hall. Jazz, swing &amp; pop standards from the 1930s to today, plus Christmas and patriotic favorites, tailored to every occasion.</span>
 function MissionHero() {
   const [hasPhoto, setHasPhoto] = useState(true)
   return <div className="card" style={{ marginBottom: 22, overflow: 'hidden', display: 'grid', gridTemplateColumns: hasPhoto ? '300px 1fr' : '1fr' }}>
     {hasPhoto && <img src="/ensemble.jpg" alt="The Masterpieces" onError={() => setHasPhoto(false)} style={{ width: '100%', height: '100%', maxHeight: 168, objectFit: 'cover', display: 'block' }} />}
-    <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(135deg,#faf5ff,#fff)' }}>
+    <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(135deg,#faf3e6,#fff)' }}>
       <IconChip grad={G.purple} size={38}><Sparkle size={18} /></IconChip>
-      <div style={{ fontSize: 12.5, color: '#6b5b8f', lineHeight: 1.55 }}>{MISSION}</div>
+      <div style={{ fontSize: 12.5, color: '#4a4a5e', lineHeight: 1.55 }}>{MISSION}</div>
     </div>
   </div>
 }
@@ -215,14 +221,14 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }
   return <div className="fade">
     <div style={{ marginBottom: 18 }}>
       <h1 className="serif" style={{ fontSize: 30, fontWeight: 800 }}>{greet}, Beth 👋</h1>
-      <p style={{ color: '#8b7fb0', fontSize: 14.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
+      <p style={{ color: '#6e6e82', fontSize: 14.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
     </div>
     <MissionHero />
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
       {cards.map((c, i) => <div key={i} className="card lift" onClick={() => nav(c.go)} style={{ padding: 20, cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}><div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#a99fc8' }}>{c.l}</div><IconChip grad={c.grad} size={40}>{c.ic}</IconChip></div>
-        <div style={{ fontSize: 32, fontWeight: 800, marginTop: 14, color: '#1f2937' }}>{c.v}</div>
-        <div style={{ fontSize: 12.5, color: '#a99fc8', marginTop: 2 }}>{c.s}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}><div style={{ fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#8a8598' }}>{c.l}</div><IconChip grad={c.grad} size={40}>{c.ic}</IconChip></div>
+        <div style={{ fontSize: 32, fontWeight: 800, marginTop: 14, color: '#1a1a2e' }}>{c.v}</div>
+        <div style={{ fontSize: 12.5, color: '#8a8598', marginTop: 2 }}>{c.s}</div>
       </div>)}
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 18 }}>
@@ -238,13 +244,13 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>{Object.entries(nA).map(([rid, resp]) => { const m = R.find(x => x.id === +rid); if (!m) return null; const c = RESP[resp] || RESP.pending; return <div key={rid} title={`${m.name}: ${resp}`} style={{ width: 38, height: 38, borderRadius: '50%', background: c.bg, color: c.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, border: `2px solid ${c.bd}` }}>{ini(m.name)}</div> })}</div>
           <div style={{ display: 'flex', gap: 8 }}>{['yes', 'pending', 'no'].map(r => { const c = RESP[r]; const n = Object.values(nA).filter(x => x === r).length; return <div key={r} style={{ flex: 1, textAlign: 'center', background: c.bg, color: c.fg, borderRadius: 10, padding: '8px 0', fontSize: 12.5, fontWeight: 700 }}>{n} {r}</div> })}</div>
         </div>
-      </div> : <div className="card" style={{ padding: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a99fc8' }}>No upcoming performances scheduled.</div>}
+      </div> : <div className="card" style={{ padding: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8a8598' }}>No upcoming performances scheduled.</div>}
 
       <div className="card" style={{ padding: 22 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}><SectionTitle>The Four Voices</SectionTitle><button onClick={() => nav('ensemble')} style={{ fontSize: 12, color: '#7C3AED', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>Manage <Arrow size={14} /></button></div>
-        {['Soprano', 'Alto', 'Tenor', 'Bass'].map(part => { const pc = VP[part]; const m = aR.filter(r => r.voice_part === part); const lead = m.find(r => r.singer_type === 'member') || m[0]; return <div key={part} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 0', borderBottom: '1px solid #f4f0fb' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}><SectionTitle>The Four Voices</SectionTitle><button onClick={() => nav('ensemble')} style={{ fontSize: 12, color: '#1c3564', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>Manage <Arrow size={14} /></button></div>
+        {['Soprano', 'Alto', 'Tenor', 'Bass'].map(part => { const pc = VP[part]; const m = aR.filter(r => r.voice_part === part); const lead = m.find(r => r.singer_type === 'member') || m[0]; return <div key={part} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 0', borderBottom: '1px solid #efe6d4' }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: pc.grad, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, boxShadow: `0 4px 10px ${pc.fg}33` }}>{part[0]}</div>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{part}</div><div style={{ fontSize: 12, color: '#a99fc8' }}>{lead ? lead.name : <span style={{ color: '#EF4444' }}>No singer assigned</span>}</div></div>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{part}</div><div style={{ fontSize: 12, color: '#8a8598' }}>{lead ? lead.name : <span style={{ color: '#EF4444' }}>No singer assigned</span>}</div></div>
           {m.length > 1 && <Pill bg={pc.bg} fg={pc.fg}>+{m.length - 1}</Pill>}
         </div> })}
       </div>
@@ -260,13 +266,13 @@ function Ensemble({ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS
   const Card = ({ s }) => { const pc = VP[s.voice_part] || VP.Soprano; return <div className="card lift" onClick={() => sSSng(s.id)} style={{ padding: 17, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, borderTop: `3px solid ${pc.fg}` }}>
     <Avatar name={s.name} part={s.voice_part} type={s.singer_type} size={48} />
     <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{s.name}</div><div style={{ display: 'flex', gap: 6 }}><Pill bg={pc.bg} fg={pc.fg}>{s.voice_part}</Pill>{s.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">Guest</Pill>}</div></div>
-    <span style={{ color: '#d6cdec' }}><Arrow size={18} /></span>
+    <span style={{ color: '#cfc8d8' }}><Arrow size={18} /></span>
   </div> }
   return <div className="fade">
     <Header title="The Ensemble" sub={`${core.length} core voices${guests.length ? ` · ${guests.length} guest singers` : ''}`} action={{ label: 'Add Singer', on: () => sShS(true) }} />
     <Filter opts={filt} val={rf} set={sRf} />
     {showCore && <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 12px' }}><Sparkle size={16} color="#7C3AED" /><span style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>Core Members</span></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 12px' }}><Sparkle size={16} color="#1c3564" /><span style={{ fontSize: 13, fontWeight: 800, color: '#1c3564' }}>Core Members</span></div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(270px,1fr))', gap: 12, marginBottom: guests.length && showGuest ? 28 : 0 }}>{core.map(s => <Card key={s.id} s={s} />)}{!core.length && <Empty>No core members yet.</Empty>}</div>
     </>}
     {showGuest && <>
@@ -284,8 +290,8 @@ function SingerDetail({ R, sSng, sSSng, togAct, togTy, sESng }) {
     <div style={{ padding: '0 26px 26px', marginTop: -34 }}>
       <Avatar name={s.name} part={s.voice_part} type={s.singer_type} size={68} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}><h2 className="serif" style={{ fontSize: 23, fontWeight: 700 }}>{s.name}</h2>{!s.active && <Pill bg="#FEE2E2" fg="#B91C1C">Inactive</Pill>}</div>
-      <div style={{ display: 'flex', gap: 7, marginTop: 8 }}><Pill bg={pc.bg} fg={pc.fg}>{s.voice_part}</Pill><Pill bg={s.singer_type === 'member' ? '#EDE9FE' : '#FEF3C7'} fg={s.singer_type === 'member' ? '#7C3AED' : '#B45309'}>{s.singer_type === 'member' ? 'Core Member' : 'Guest Singer'}</Pill></div>
-      <div style={{ display: 'grid', gap: 10, margin: '20px 0', background: '#faf8ff', borderRadius: 13, padding: 16 }}>
+      <div style={{ display: 'flex', gap: 7, marginTop: 8 }}><Pill bg={pc.bg} fg={pc.fg}>{s.voice_part}</Pill><Pill bg={s.singer_type === 'member' ? '#EDE9FE' : '#FEF3C7'} fg={s.singer_type === 'member' ? '#1c3564' : '#B45309'}>{s.singer_type === 'member' ? 'Core Member' : 'Guest Singer'}</Pill></div>
+      <div style={{ display: 'grid', gap: 10, margin: '20px 0', background: '#faf5e9', borderRadius: 13, padding: 16 }}>
         <Row ic={<Phone size={16} />}>{s.phone || 'No phone on file'}</Row>
         <Row ic={<Mail size={16} />}>{s.email || 'No email on file'}</Row>
         <Row ic={<Clock size={16} />}>Joined {fmt(s.joined_date)}</Row>
@@ -318,19 +324,19 @@ function Music({ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMu
         <div style={{ fontSize: 11.5, opacity: .85, marginTop: 7 }}>{sMB} MB stored per device</div>
       </div>
       <div style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><IconChip grad={G.green} size={38}><Cloud size={18} /></IconChip><div><div style={{ fontSize: 13.5, fontWeight: 700 }}>One library, every iPad</div><div style={{ fontSize: 12, color: '#a99fc8' }}>Toggle a piece to push or pull it from devices instantly — no more loading each iPad by hand.</div></div></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><IconChip grad={G.green} size={38}><Cloud size={18} /></IconChip><div><div style={{ fontSize: 13.5, fontWeight: 700 }}>One library, every iPad</div><div style={{ fontSize: 12, color: '#8a8598' }}>Toggle a piece to push or pull it from devices instantly — no more loading each iPad by hand.</div></div></div>
         <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#6b7280', flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: G.green, display: 'inline-block' }} /> On iPads</span><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#cbd5e1', display: 'inline-block' }} /> Cloud only</span></div>
       </div>
     </div>
     <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-      <div style={{ flex: 1, minWidth: 200, position: 'relative' }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#b6abd4' }}><Search size={17} /></span><input value={q} onChange={e => sQ(e.target.value)} placeholder="Search by title or arranger…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e6dffa', fontSize: 13.5, background: '#fff' }} /></div>
+      <div style={{ flex: 1, minWidth: 200, position: 'relative' }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#a8a3b5' }}><Search size={17} /></span><input value={q} onChange={e => sQ(e.target.value)} placeholder="Search by title or arranger…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e2d6bd', fontSize: 13.5, background: '#fff' }} /></div>
       <Filter opts={cats.map(c => [c, c === 'all' ? 'All' : c])} val={mf} set={sMf} bare />
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(310px,1fr))', gap: 12 }}>{fd.map(s => { const onPad = !s.cloud_only; return <div key={s.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 13 }}>
       <IconChip grad={onPad ? G.green : 'linear-gradient(135deg,#cbd5e1,#94a3b8)'} size={42}>{onPad ? <Tablet size={19} /> : <Cloud size={19} />}</IconChip>
-      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div><div style={{ fontSize: 12, color: '#a99fc8', marginBottom: 4 }}>{s.arranger || 'Traditional'}</div><div style={{ fontSize: 11, color: '#bbb1d6' }}>{s.category} · {s.pages}pg · {s.file_size_mb}MB</div></div>
-      <button onClick={() => sEMus(s.id)} title="Edit arrangement" style={{ padding: 8, borderRadius: 10, color: '#7a6fa0', background: '#f4f0fb', display: 'flex', alignItems: 'center' }}><Pencil size={15} /></button>
-      <button onClick={() => togSync(s.id)} style={{ padding: '8px 13px', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, background: onPad ? '#D1FAE5' : '#f1ecfb', color: onPad ? '#047857' : '#7a6fa0' }}>{onPad ? <><Check size={14} />iPad</> : <><Cloud size={14} />Cloud</>}</button>
+      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div><div style={{ fontSize: 12, color: '#8a8598', marginBottom: 4 }}>{s.arranger || 'Traditional'}</div><div style={{ fontSize: 11, color: '#9a94a8' }}>{s.category} · {s.pages}pg · {s.file_size_mb}MB</div></div>
+      <button onClick={() => sEMus(s.id)} title="Edit arrangement" style={{ padding: 8, borderRadius: 10, color: '#6e6e82', background: '#efe6d4', display: 'flex', alignItems: 'center' }}><Pencil size={15} /></button>
+      <button onClick={() => togSync(s.id)} style={{ padding: '8px 13px', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, background: onPad ? '#D1FAE5' : '#f0e8d6', color: onPad ? '#047857' : '#6e6e82' }}>{onPad ? <><Check size={14} />iPad</> : <><Cloud size={14} />Cloud</>}</button>
     </div> })}{!fd.length && <Empty>No arrangements match your search.</Empty>}</div>
   </div>
 }
@@ -355,13 +361,13 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
             <Stat ic={<Sparkle size={16} />} l="Occasion" v={inq.event_type} />
             <Stat ic={<Phone size={16} />} l="Phone" v={inq.phone || '—'} />
           </div>
-          {inq.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf8ff', padding: 15, borderRadius: 12, marginBottom: 20 }}>{inq.notes}</div>}
-          <div style={{ background: isOD ? '#FEF2F2' : '#faf8ff', border: `1px solid ${isOD ? '#FECACA' : '#efe9fa'}`, borderRadius: 13, padding: 16, marginBottom: 20 }}>
+          {inq.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf5e9', padding: 15, borderRadius: 12, marginBottom: 20 }}>{inq.notes}</div>}
+          <div style={{ background: isOD ? '#FEF2F2' : '#faf5e9', border: `1px solid ${isOD ? '#FECACA' : '#efe6d4'}`, borderRadius: 13, padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><SectionTitle>Follow-up</SectionTitle>{isOD && <Pill bg="#FEE2E2" fg="#B91C1C">Overdue</Pill>}</div>
             <div style={{ display: 'flex', gap: 22, fontSize: 12.5, flexWrap: 'wrap', color: '#6b7280' }}>
-              <span>Created <b style={{ color: '#1f2937' }}>{fmt(inq.created_at?.split('T')[0])}</b></span>
-              <span>Last <b style={{ color: '#1f2937' }}>{inq.last_follow_up ? fmt(inq.last_follow_up) : 'never'}</b></span>
-              <span>Next <b style={{ color: isOD ? '#B91C1C' : '#1f2937' }}>{inq.next_follow_up ? fmt(inq.next_follow_up) : 'N/A'}</b></span>
+              <span>Created <b style={{ color: '#1a1a2e' }}>{fmt(inq.created_at?.split('T')[0])}</b></span>
+              <span>Last <b style={{ color: '#1a1a2e' }}>{inq.last_follow_up ? fmt(inq.last_follow_up) : 'never'}</b></span>
+              <span>Next <b style={{ color: isOD ? '#B91C1C' : '#1a1a2e' }}>{inq.next_follow_up ? fmt(inq.next_follow_up) : 'N/A'}</b></span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
@@ -379,14 +385,14 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
 
   return <div className="fade">
     <Header title="Bookings" sub="Track every inquiry from first hello to confirmed performance." action={{ label: 'New Inquiry', on: () => sShI(true) }} />
-    {od.length > 0 && <div style={{ background: G.amber, color: '#fff', borderRadius: 14, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 11, boxShadow: '0 8px 22px rgba(245,158,11,.25)' }}><Bell size={20} /><div style={{ fontSize: 13.5 }}><b>{od.length} overdue follow-up{od.length > 1 ? 's' : ''}:</b> {od.map(i => i.contact_name).join(', ')}</div></div>}
+    {od.length > 0 && <div style={{ background: G.amber, color: '#fff', borderRadius: 14, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 11, boxShadow: '0 8px 22px rgba(13,26,48,.18)' }}><Bell size={20} /><div style={{ fontSize: 13.5 }}><b>{od.length} overdue follow-up{od.length > 1 ? 's' : ''}:</b> {od.map(i => i.contact_name).join(', ')}</div></div>}
     <Filter opts={sts} val={lf} set={sLf} />
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{fd.map(inq => { const isOD = inq.status !== 'lost' && inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date(); return <div key={inq.id} className="card lift" onClick={() => sSInq(inq.id)} style={{ padding: 17, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: isOD ? '4px solid #FB7185' : '4px solid transparent' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <IconChip grad={inq.status === 'confirmed' ? G.green : inq.status === 'lost' ? 'linear-gradient(135deg,#cbd5e1,#94a3b8)' : G.purple} size={44}><Mail size={19} /></IconChip>
-        <div><div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}><span style={{ fontSize: 15, fontWeight: 700 }}>{inq.contact_name}</span><Badge s={inq.status} />{isOD && <Pill bg="#FEE2E2" fg="#B91C1C">Overdue</Pill>}</div><div style={{ fontSize: 12.5, color: '#a99fc8' }}>{inq.organization} · {inq.event_type}</div></div>
+        <div><div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}><span style={{ fontSize: 15, fontWeight: 700 }}>{inq.contact_name}</span><Badge s={inq.status} />{isOD && <Pill bg="#FEE2E2" fg="#B91C1C">Overdue</Pill>}</div><div style={{ fontSize: 12.5, color: '#8a8598' }}>{inq.organization} · {inq.event_type}</div></div>
       </div>
-      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 16, fontWeight: 800, color: '#7C3AED' }}>{$(inq.expected_donation)}</div><div style={{ fontSize: 11.5, color: '#a99fc8' }}>{inq.event_date ? fmt(inq.event_date) : 'TBD'}</div></div>
+      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 16, fontWeight: 800, color: '#1c3564' }}>{$(inq.expected_donation)}</div><div style={{ fontSize: 11.5, color: '#8a8598' }}>{inq.event_date ? fmt(inq.event_date) : 'TBD'}</div></div>
     </div> })}{!fd.length && <Empty>No bookings in this view.</Empty>}</div>
   </div>
 }
@@ -412,10 +418,10 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
             <Stat ic={<Users size={16} />} l="Contact" v={x.organizer_name ? `${x.organizer_name}${x.organizer_role ? ` · ${x.organizer_role}` : ''}` : '—'} />
             <Stat ic={<Phone size={16} />} l="Phone" v={x.phone || '—'} />
             <Stat ic={<Mail size={16} />} l="Email" v={x.email || '— (not public — call to confirm)'} />
-            <Stat ic={<Globe size={16} />} l="Website" v={x.website ? <a href={x.website} target="_blank" rel="noreferrer" style={{ color: '#7C3AED' }}>{x.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a> : '—'} />
+            <Stat ic={<Globe size={16} />} l="Website" v={x.website ? <a href={x.website} target="_blank" rel="noreferrer" style={{ color: '#1c3564' }}>{x.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a> : '—'} />
           </div>
-          {x.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf8ff', padding: 15, borderRadius: 12, marginBottom: 16 }}>{x.notes}</div>}
-          {x.source && <div style={{ fontSize: 11.5, color: '#a99fc8', marginBottom: 18 }}>Source: <a href={x.source} target="_blank" rel="noreferrer" style={{ color: '#9b8fc0' }}>{x.source.replace(/^https?:\/\//, '').slice(0, 60)}</a></div>}
+          {x.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf5e9', padding: 15, borderRadius: 12, marginBottom: 16 }}>{x.notes}</div>}
+          {x.source && <div style={{ fontSize: 11.5, color: '#8a8598', marginBottom: 18 }}>Source: <a href={x.source} target="_blank" rel="noreferrer" style={{ color: '#6e6e82' }}>{x.source.replace(/^https?:\/\//, '').slice(0, 60)}</a></div>}
           <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
             <Btn grad={G.purple} onClick={() => composeP(x)}><Mail size={16} />Compose Email</Btn>
             {x.status === 'prospect' && <Btn ghost onClick={() => updPS(x.id, 'contacted')}><Check size={16} />Mark Contacted</Btn>}
@@ -436,25 +442,25 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
   return <div className="fade">
     <Header title="Prospects" sub="Local Houston-area groups that book a vocal ensemble like ours." action={{ label: 'Add Prospect', on: () => sShP(true) }} />
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 18 }}>
-      <div className="card" style={{ padding: 16 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#a99fc8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Active Targets</div><div style={{ fontSize: 28, fontWeight: 800, marginTop: 6 }}>{active}</div></div>
-      {byType.map(([t, n]) => <div key={t} className="card lift" style={{ padding: 16, cursor: 'pointer' }} onClick={() => sPtf(ptf === t ? 'all' : t)}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconChip grad={PTC[t]} size={30}><Target size={15} /></IconChip><div style={{ fontSize: 11.5, fontWeight: 700, color: '#6b5b8f', lineHeight: 1.15 }}>{t}</div></div><div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{n}</div></div>)}
+      <div className="card" style={{ padding: 16 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase', letterSpacing: '.05em' }}>Active Targets</div><div style={{ fontSize: 28, fontWeight: 800, marginTop: 6 }}>{active}</div></div>
+      {byType.map(([t, n]) => <div key={t} className="card lift" style={{ padding: 16, cursor: 'pointer' }} onClick={() => sPtf(ptf === t ? 'all' : t)}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconChip grad={PTC[t]} size={30}><Target size={15} /></IconChip><div style={{ fontSize: 11.5, fontWeight: 700, color: '#4a4a5e', lineHeight: 1.15 }}>{t}</div></div><div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{n}</div></div>)}
     </div>
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       <Filter opts={statuses} val={pf} set={sPf} />
-      <div style={{ flex: 1, minWidth: 200, position: 'relative', marginBottom: 18 }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#b6abd4' }}><Search size={17} /></span><input value={pq} onChange={e => sPq(e.target.value)} placeholder="Search org, city, or contact…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e6dffa', fontSize: 13.5, background: '#fff' }} /></div>
+      <div style={{ flex: 1, minWidth: 200, position: 'relative', marginBottom: 18 }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#a8a3b5' }}><Search size={17} /></span><input value={pq} onChange={e => sPq(e.target.value)} placeholder="Search org, city, or contact…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e2d6bd', fontSize: 13.5, background: '#fff' }} /></div>
     </div>
-    {ptf !== 'all' && <div style={{ marginBottom: 14, fontSize: 12.5 }}><Pill bg="#EDE9FE" fg="#7C3AED">{ptf}</Pill> <button onClick={() => sPtf('all')} style={{ fontSize: 12, color: '#a99fc8', fontWeight: 700 }}>clear type filter</button></div>}
+    {ptf !== 'all' && <div style={{ marginBottom: 14, fontSize: 12.5 }}><Pill bg="#EDE9FE" fg="#1c3564">{ptf}</Pill> <button onClick={() => sPtf('all')} style={{ fontSize: 12, color: '#8a8598', fontWeight: 700 }}>clear type filter</button></div>}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 12 }}>{fd.map(x => { const ps = PS[x.status] || PS.prospect; return <div key={x.id} className="card lift" onClick={() => sSPro(x.id)} style={{ padding: 16, cursor: 'pointer' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <IconChip grad={PTC[x.org_type] || G.purple} size={40}><Target size={18} /></IconChip>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.organization}</div>
-          <div style={{ fontSize: 11.5, color: '#a99fc8', marginTop: 2 }}>{x.org_type}{x.city ? ` · ${x.city}` : ''}</div>
+          <div style={{ fontSize: 11.5, color: '#8a8598', marginTop: 2 }}>{x.org_type}{x.city ? ` · ${x.city}` : ''}</div>
         </div>
         <Pill bg={ps.bg} fg={ps.fg}>{ps.l}</Pill>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 8 }}>
-        <div style={{ fontSize: 12, color: '#6b5b8f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.organizer_name || x.email || x.phone || 'No contact yet'}</div>
+        <div style={{ fontSize: 12, color: '#4a4a5e', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.organizer_name || x.email || x.phone || 'No contact yet'}</div>
         <div style={{ fontSize: 13, color: '#F59E0B', letterSpacing: 1, flexShrink: 0 }} title={`Fit ${x.fit_score}/5`}>{stars(x.fit_score)}</div>
       </div>
     </div> })}{!fd.length && <Empty>No prospects in this view.</Empty>}</div>
@@ -476,12 +482,12 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
         </div>
         <div style={{ padding: 26 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}><SectionTitle>Singer Availability</SectionTitle><Btn small grad={G.amber} onClick={() => sEmail({ availability: ev })}><Send size={14} />Email Request</Btn></div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 22 }}>{aR.map(m => { const pcv = VP[m.voice_part] || VP.Soprano; return <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 13px', background: '#faf8ff', borderRadius: 11 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 22 }}>{aR.map(m => { const pcv = VP[m.voice_part] || VP.Soprano; return <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 13px', background: '#faf5e9', borderRadius: 11 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><Avatar name={m.name} part={m.voice_part} type={m.singer_type} size={36} /><div><div style={{ fontSize: 13.5, fontWeight: 700 }}>{m.name}</div><div style={{ display: 'flex', gap: 5, marginTop: 2 }}><Pill bg={pcv.bg} fg={pcv.fg}>{m.voice_part}</Pill>{m.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">guest</Pill>}</div></div></div>
             <div style={{ display: 'flex', gap: 5 }}>{['yes', 'pending', 'no'].map(r => { const c = RESP[r]; const on = (ea[m.id] || 'pending') === r; return <button key={r} onClick={() => updR(ev.id, m.id, r)} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 11.5, fontWeight: 700, textTransform: 'capitalize', background: on ? c.fg : '#eee', color: on ? '#fff' : '#9ca3af' }}>{r}</button> })}</div>
           </div> })}</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf8ff', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f1ecfb' : '#D1FAE5'} fg={s.cloud_only ? '#7a6fa0' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf5e9', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f0e8d6' : '#D1FAE5'} fg={s.cloud_only ? '#6e6e82' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
         </div>
       </div>
     </div>
@@ -491,14 +497,14 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
     <Header title="Events" sub="Confirm the ensemble’s availability before you commit to a date." />
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{E.map(ev => { const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pcn = Object.values(ea).filter(r => r === 'pending').length; const tot = aR.length || 1; const d = dU(ev.event_date); const ok = yc >= 4
     return <div key={ev.id} className="card lift" onClick={() => sSEv(ev.id)} style={{ padding: 19, cursor: 'pointer', display: 'flex', gap: 18, alignItems: 'center' }}>
-      <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#a99fc8', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1f2937' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div></div>
-      <div style={{ width: 1, alignSelf: 'stretch', background: '#efe9fa' }} />
+      <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1a1a2e' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div></div>
+      <div style={{ width: 1, alignSelf: 'stretch', background: '#efe6d4' }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}><span className="serif" style={{ fontSize: 18, fontWeight: 700 }}>{ev.title}</span><Badge s={ev.status} /></div>
-        <div style={{ fontSize: 12.5, color: '#a99fc8', marginBottom: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} />{ev.event_time}</span><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{ev.venue}</span></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><div style={{ flex: 1, maxWidth: 220, height: 7, borderRadius: 4, background: '#f1ecfb', overflow: 'hidden', display: 'flex' }}><div style={{ width: `${(yc / tot) * 100}%`, background: G.green }} /><div style={{ width: `${(pcn / tot) * 100}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)' }} /></div><span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#047857' : '#6b7280' }}>{yc}/{tot} yes</span>{ok && <Pill bg="#D1FAE5" fg="#047857">Ensemble ready</Pill>}</div>
+        <div style={{ fontSize: 12.5, color: '#8a8598', marginBottom: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} />{ev.event_time}</span><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{ev.venue}</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><div style={{ flex: 1, maxWidth: 220, height: 7, borderRadius: 4, background: '#f0e8d6', overflow: 'hidden', display: 'flex' }}><div style={{ width: `${(yc / tot) * 100}%`, background: G.green }} /><div style={{ width: `${(pcn / tot) * 100}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)' }} /></div><span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#047857' : '#6b7280' }}>{yc}/{tot} yes</span>{ok && <Pill bg="#D1FAE5" fg="#047857">Ensemble ready</Pill>}</div>
       </div>
-      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#7C3AED' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 ? '#EF4444' : '#a99fc8' }}>{d > 0 ? `${d} days` : 'Past'}</div></div>
+      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#1c3564' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 ? '#EF4444' : '#8a8598' }}>{d > 0 ? `${d} days` : 'Past'}</div></div>
     </div> })}{!E.length && <Empty>No events scheduled.</Empty>}</div>
   </div>
 }
@@ -535,21 +541,21 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
       <Mail size={24} /><div><div style={{ fontSize: 18, fontWeight: 800 }}>{title}</div><div style={{ fontSize: 12.5, opacity: .9 }}>{sub}</div></div>
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
-      <div style={{ padding: 22, overflowY: 'auto', borderRight: '1px solid #efe9fa' }}>
-        {isFollowup && <><SectionTitle>Template</SectionTitle><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>{Object.entries(TEMPLATES).map(([k, t]) => <button key={k} onClick={() => sType(k)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 11, border: type === k ? '2px solid #7C3AED' : '1px solid #e6dffa', background: type === k ? '#f5f0ff' : '#fff' }}><div style={{ fontSize: 12.5, fontWeight: 800, color: type === k ? '#7C3AED' : '#1f2937' }}>{t.label}</div><div style={{ fontSize: 10.5, color: '#a99fc8', marginTop: 2 }}>{t.hint}</div></button>)}</div></>}
+      <div style={{ padding: 22, overflowY: 'auto', borderRight: '1px solid #efe6d4' }}>
+        {isFollowup && <><SectionTitle>Template</SectionTitle><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>{Object.entries(TEMPLATES).map(([k, t]) => <button key={k} onClick={() => sType(k)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 11, border: type === k ? '2px solid #1c3564' : '1px solid #e2d6bd', background: type === k ? '#faf3e6' : '#fff' }}><div style={{ fontSize: 12.5, fontWeight: 800, color: type === k ? '#1c3564' : '#1a1a2e' }}>{t.label}</div><div style={{ fontSize: 10.5, color: '#8a8598', marginTop: 2 }}>{t.hint}</div></button>)}</div></>}
         <SectionTitle>Recipients</SectionTitle>
-        <div style={{ fontSize: 12.5, color: recipients ? '#4b5563' : '#a99fc8', background: '#faf8ff', borderRadius: 10, padding: '9px 12px', marginBottom: 16, wordBreak: 'break-all' }}>{recipients || (isProposal ? 'Add the client’s email in your mail app' : 'No email address on file')}</div>
+        <div style={{ fontSize: 12.5, color: recipients ? '#4b5563' : '#8a8598', background: '#faf5e9', borderRadius: 10, padding: '9px 12px', marginBottom: 16, wordBreak: 'break-all' }}>{recipients || (isProposal ? 'Add the client’s email in your mail app' : 'No email address on file')}</div>
         <SectionTitle>Subject</SectionTitle>
-        <input value={subject} onChange={e => sSubject(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e6dffa', fontSize: 13.5, marginBottom: 16 }} />
+        <input value={subject} onChange={e => sSubject(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e2d6bd', fontSize: 13.5, marginBottom: 16 }} />
         <SectionTitle>Message</SectionTitle>
-        <textarea value={body} onChange={e => sBody(e.target.value)} style={{ width: '100%', minHeight: 190, padding: 12, borderRadius: 11, border: '1px solid #e6dffa', fontSize: 13, lineHeight: 1.55, resize: 'vertical', fontFamily: 'inherit' }} />
+        <textarea value={body} onChange={e => sBody(e.target.value)} style={{ width: '100%', minHeight: 190, padding: 12, borderRadius: 11, border: '1px solid #e2d6bd', fontSize: 13, lineHeight: 1.55, resize: 'vertical', fontFamily: 'inherit' }} />
       </div>
-      <div style={{ padding: 22, background: '#f6f3fc', overflowY: 'auto' }}>
+      <div style={{ padding: 22, background: '#fdf8ee', overflowY: 'auto' }}>
         <SectionTitle>Live Preview</SectionTitle>
-        <iframe title="preview" srcDoc={built.html} style={{ width: '100%', height: 430, border: '1px solid #e6dffa', borderRadius: 13, background: '#fff' }} />
+        <iframe title="preview" srcDoc={built.html} style={{ width: '100%', height: 430, border: '1px solid #e2d6bd', borderRadius: 13, background: '#fff' }} />
       </div>
     </div>
-    <div style={{ padding: '16px 22px', borderTop: '1px solid #efe9fa', display: 'flex', gap: 9, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+    <div style={{ padding: '16px 22px', borderTop: '1px solid #efe6d4', display: 'flex', gap: 9, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
       <Btn ghost onClick={() => copy(false)}><Copy size={15} />Copy Text</Btn>
       <Btn ghost onClick={() => copy(true)}><Copy size={15} />Copy Formatted</Btn>
       <Btn grad={accent} onClick={openMail}><Send size={15} />Open in Mail App</Btn>
@@ -559,15 +565,15 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
 
 /* ---------- shared ui ---------- */
 const Header = ({ title, sub, action }) => <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, gap: 16, flexWrap: 'wrap' }}>
-  <div><h1 className="serif gtext" style={{ fontSize: 30, fontWeight: 800 }}>{title}</h1><p style={{ color: '#8b7fb0', fontSize: 14, marginTop: 4 }}>{sub}</p></div>
-  {action && <button onClick={action.on} style={{ padding: '11px 18px', borderRadius: 13, background: G.purple, color: '#fff', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 8px 20px rgba(124,58,237,.28)' }}>{action.icon || <Plus size={17} />}{action.label}</button>}
+  <div><h1 className="serif gtext" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' }}>{title}</h1><p className="ui" style={{ color: '#6e6e82', fontSize: 13.5, marginTop: 4 }}>{sub}</p></div>
+  {action && <button onClick={action.on} className="ui" style={{ padding: '11px 20px', borderRadius: 8, background: '#0d1a30', color: '#e8b430', fontSize: 11.5, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 8px 20px rgba(13,26,48,.22)' }}>{action.icon || <Plus size={17} />}{action.label}</button>}
 </div>
-const Filter = ({ opts, val, set }) => <div style={{ display: 'inline-flex', gap: 3, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #efe9fa', marginBottom: 18, flexWrap: 'wrap' }}>{opts.map(([v, l]) => <button key={v} onClick={() => set(v)} style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: val === v ? G.purple : 'transparent', color: val === v ? '#fff' : '#8b7fb0', transition: 'all .15s' }}>{l}</button>)}</div>
-const Btn = ({ children, grad, ghost, danger, small, ...p }) => <button {...p} style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 11, fontSize: small ? 12 : 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7, background: grad || (ghost ? '#fff' : G.purple), color: grad ? '#fff' : ghost ? (danger ? '#B91C1C' : '#4b5563') : '#fff', border: ghost ? `1px solid ${danger ? '#FECACA' : '#e6dffa'}` : 'none', boxShadow: grad ? '0 6px 16px rgba(124,58,237,.22)' : 'none' }}>{children}</button>
-const BackBtn = ({ onClick }) => <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#7C3AED', fontSize: 13.5, fontWeight: 700, marginBottom: 18 }}><Arrow size={16} style={{ transform: 'rotate(180deg)' }} />Back</button>
-const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#a99fc8', fontSize: 13.5, gridColumn: '1/-1' }}>{children}</div>
-const Row = ({ ic, children }) => <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5 }}><span style={{ color: '#b6abd4' }}>{ic}</span>{children}</div>
-const Stat = ({ ic, l, v }) => <div style={{ background: '#faf8ff', borderRadius: 12, padding: 14 }}><div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: '#a99fc8', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '.05em', marginBottom: 6 }}>{ic}{l}</div><div style={{ fontSize: 14.5, fontWeight: 700 }}>{v}</div></div>
+const Filter = ({ opts, val, set }) => <div style={{ display: 'inline-flex', gap: 3, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #efe6d4', marginBottom: 18, flexWrap: 'wrap' }}>{opts.map(([v, l]) => <button key={v} onClick={() => set(v)} style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: val === v ? G.purple : 'transparent', color: val === v ? '#fff' : '#6e6e82', transition: 'all .15s' }}>{l}</button>)}</div>
+const Btn = ({ children, grad, ghost, danger, small, ...p }) => { const isNavy = !ghost && (!grad || grad === G.purple); return <button {...p} className="ui" style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 8, fontSize: small ? 11 : 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, background: ghost ? '#fff' : (grad || G.purple), color: ghost ? (danger ? '#B91C1C' : '#4a4a5e') : (isNavy ? '#e8b430' : '#fff'), border: ghost ? `1px solid ${danger ? '#FECACA' : '#e2d6bd'}` : 'none', boxShadow: ghost ? 'none' : '0 6px 16px rgba(13,26,48,.18)' }}>{children}</button> }
+const BackBtn = ({ onClick }) => <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1c3564', fontSize: 13.5, fontWeight: 700, marginBottom: 18 }}><Arrow size={16} style={{ transform: 'rotate(180deg)' }} />Back</button>
+const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#8a8598', fontSize: 13.5, gridColumn: '1/-1' }}>{children}</div>
+const Row = ({ ic, children }) => <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5 }}><span style={{ color: '#a8a3b5' }}>{ic}</span>{children}</div>
+const Stat = ({ ic, l, v }) => <div style={{ background: '#faf5e9', borderRadius: 12, padding: 14 }}><div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: '#8a8598', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '.05em', marginBottom: 6 }}>{ic}{l}</div><div style={{ fontSize: 14.5, fontWeight: 700 }}>{v}</div></div>
 function Modal({ children, onX, wide }) { return <div onClick={onX} style={{ position: 'fixed', inset: 0, background: 'rgba(30,20,55,.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500, padding: 20 }}><div onClick={e => e.stopPropagation()} className="card" style={{ width: wide ? 880 : 440, maxWidth: '100%', maxHeight: '92vh', overflow: 'auto', animation: 'pop .25s ease' }}>{children}</div></div> }
 
 function FModal({ t, sub, onX, fs, onOk }) {
@@ -575,13 +581,13 @@ function FModal({ t, sub, onX, fs, onOk }) {
   const [fm, sFm] = useState(Object.fromEntries(fs.map(f => [f.k, gd(f)])))
   const up = (k, v) => sFm(p => ({ ...p, [k]: v }))
   const ok = fs.filter(f => f.rq).every(f => fm[f.k])
-  const st = { width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e6dffa', fontSize: 13.5, background: '#fff' }
+  const st = { width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e2d6bd', fontSize: 13.5, background: '#fff' }
   return <Modal onX={onX}>
     <div style={{ background: G.purple, padding: '20px 26px', color: '#fff' }}><h2 className="serif" style={{ fontSize: 20, fontWeight: 700 }}>{t}</h2>{sub && <div style={{ fontSize: 12.5, opacity: .9, marginTop: 2 }}>{sub}</div>}</div>
     <div style={{ padding: 26 }}>
-      <div style={{ display: 'grid', gap: 13 }}>{fs.map(f => { const lbl = <label style={{ fontSize: 11.5, fontWeight: 700, color: '#7a6fa0', marginBottom: 5, display: 'block' }}>{f.l}{f.rq ? <span style={{ color: '#EC4899' }}> *</span> : null}</label>
+      <div style={{ display: 'grid', gap: 13 }}>{fs.map(f => { const lbl = <label style={{ fontSize: 11.5, fontWeight: 700, color: '#6e6e82', marginBottom: 5, display: 'block' }}>{f.l}{f.rq ? <span style={{ color: '#d03a6a' }}> *</span> : null}</label>
         if (f.ty === 'sel') return <div key={f.k}>{lbl}<select style={st} value={fm[f.k]} onChange={e => up(f.k, e.target.value)}>{f.opts.map(o => <option key={o}>{o}</option>)}</select></div>
-        if (f.ty === 'tog') return <div key={f.k}>{lbl}<div style={{ display: 'flex', gap: 7 }}>{f.opts.map(o => <button key={o} onClick={() => up(f.k, o)} style={{ flex: 1, padding: '10px 0', borderRadius: 11, fontSize: 12.5, fontWeight: 700, border: fm[f.k] === o ? '2px solid #7C3AED' : '1px solid #e6dffa', background: fm[f.k] === o ? '#f5f0ff' : '#fff', color: fm[f.k] === o ? '#7C3AED' : '#9ca3af' }}>{o === 'member' ? 'Core' : o === 'guest' ? 'Guest' : o}</button>)}</div></div>
+        if (f.ty === 'tog') return <div key={f.k}>{lbl}<div style={{ display: 'flex', gap: 7 }}>{f.opts.map(o => <button key={o} onClick={() => up(f.k, o)} style={{ flex: 1, padding: '10px 0', borderRadius: 11, fontSize: 12.5, fontWeight: 700, border: fm[f.k] === o ? '2px solid #1c3564' : '1px solid #e2d6bd', background: fm[f.k] === o ? '#faf3e6' : '#fff', color: fm[f.k] === o ? '#1c3564' : '#9ca3af' }}>{o === 'member' ? 'Core' : o === 'guest' ? 'Guest' : o}</button>)}</div></div>
         if (f.ty === 'area') return <div key={f.k}>{lbl}<textarea style={{ ...st, minHeight: 72, resize: 'vertical' }} value={fm[f.k]} onChange={e => up(f.k, e.target.value)} /></div>
         if (f.ty === 'date') return <div key={f.k}>{lbl}<input type="date" style={st} value={fm[f.k]} onChange={e => up(f.k, e.target.value)} /></div>
         if (f.ty === 'num') return <div key={f.k}>{lbl}<input type="number" style={st} value={fm[f.k]} onChange={e => up(f.k, parseFloat(e.target.value) || 0)} /></div>
@@ -589,7 +595,7 @@ function FModal({ t, sub, onX, fs, onOk }) {
       })}</div>
       <div style={{ display: 'flex', gap: 9, marginTop: 22, justifyContent: 'flex-end' }}>
         <Btn ghost onClick={onX}>Cancel</Btn>
-        <button onClick={() => ok && onOk(fm)} style={{ padding: '10px 22px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700, opacity: ok ? 1 : .4, boxShadow: '0 6px 16px rgba(124,58,237,.22)' }}>Save</button>
+        <button onClick={() => ok && onOk(fm)} style={{ padding: '10px 22px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700, opacity: ok ? 1 : .4, boxShadow: '0 6px 16px rgba(13,26,48,.22)' }}>Save</button>
       </div>
     </div>
   </Modal>

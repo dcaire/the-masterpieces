@@ -20,22 +20,25 @@ const money = (n) => '$' + Number(n || 0).toLocaleString();
 const first = (name) => (name || '').trim().split(' ')[0] || 'there';
 
 // ---- Shared vibrant HTML shell -------------------------------------------------
-function shell(bodyHtml, accent = ['#7C3AED', '#EC4899']) {
-  return `<div style="margin:0;padding:24px;background:#f4f1fb;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2937">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(124,58,237,.12)">
-    <div style="background:linear-gradient(135deg,${accent[0]},${accent[1]});padding:34px 32px 30px;text-align:center">
+const FIVE_BAR = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><td width="20%" height="3" style="background:#e8b430"></td><td width="20%" height="3" style="background:#e07830"></td><td width="20%" height="3" style="background:#d03a6a"></td><td width="20%" height="3" style="background:#20a89a"></td><td width="20%" height="3" style="background:#7b52c4"></td></tr></table>`;
+
+function shell(bodyHtml, accent = ['#0d1a30', '#1c3564']) {
+  return `<div style="margin:0;padding:24px;background:#fdf8ee;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a2e">
+  <div style="max-width:560px;margin:0 auto;background:#fffdf8;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(13,26,48,.16)">
+    ${FIVE_BAR}
+    <div style="background:#0d1a30;padding:34px 32px 30px;text-align:center">
       ${BAND_PHOTO_URL
-        ? `<img src="${BAND_PHOTO_URL}" alt="The Masterpieces" width="120" style="width:120px;height:120px;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.4)" />`
-        : `<div style="display:inline-block;width:54px;height:54px;line-height:54px;border-radius:16px;background:rgba(255,255,255,.18);color:#fff;font-size:26px;font-weight:700;font-family:Georgia,serif">M</div>`}
-      <div style="margin-top:14px;color:#fff;font-size:22px;font-weight:700;letter-spacing:.3px;font-family:Georgia,serif">The Masterpieces</div>
-      <div style="margin-top:4px;color:rgba(255,255,255,.85);font-size:12px;letter-spacing:1.5px;text-transform:uppercase">Vocal Ensemble</div>
+        ? `<img src="${BAND_PHOTO_URL}" alt="The Masterpieces" width="120" style="width:120px;height:120px;border-radius:16px;object-fit:cover;border:3px solid rgba(232,180,48,.5)" />`
+        : `<div style="display:inline-block;width:54px;height:54px;line-height:54px;border-radius:14px;background:#e8b430;color:#0d1a30;font-size:28px;font-weight:700;font-family:Georgia,serif">M</div>`}
+      <div style="margin-top:8px;color:#e8b430;font-size:10px;letter-spacing:5px;text-transform:uppercase">The</div>
+      <div style="margin-top:2px;color:#fdf8ee;font-size:24px;font-weight:700;letter-spacing:3px;text-transform:uppercase;font-family:Georgia,serif">Masterpieces</div>
+      <div style="margin-top:6px;color:rgba(232,180,48,.85);font-size:11px;letter-spacing:2px;text-transform:uppercase">Vocal Ensemble</div>
     </div>
     <div style="padding:32px">${bodyHtml}</div>
-    <div style="padding:22px 32px;background:#faf8ff;border-top:1px solid #eee;text-align:center">
-      <div style="font-size:15px;font-weight:700;color:#1f2937">${SIGNATURE_NAME}</div>
-      <div style="font-size:12.5px;color:#7C3AED;font-weight:600">${SIGNATURE_ROLE}</div>
-      <div style="font-size:11.5px;color:#9ca3af;margin-top:8px;font-style:italic">${SIGNATURE_TAG}</div>
-      <div style="font-size:10.5px;color:#b6abd4;margin-top:6px">${TAX_NOTE}</div>
+    <div style="padding:22px 32px;background:#faf5e9;border-top:1px solid #efe6d4;text-align:center">
+      <div style="font-size:15px;font-weight:700;color:#1a1a2e;font-family:Georgia,serif">${SIGNATURE_NAME}</div>
+      <div style="font-size:12.5px;color:#1c3564;font-weight:600">${SIGNATURE_ROLE}</div>
+      <div style="font-size:11.5px;color:#6e6e82;margin-top:8px;font-style:italic">${SIGNATURE_TAG}</div>
     </div>
   </div>
 </div>`;
@@ -44,17 +47,17 @@ function shell(bodyHtml, accent = ['#7C3AED', '#EC4899']) {
 const p = (t) => `<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#374151">${t}</p>`;
 const button = (label, accent) => `<div style="text-align:center;margin:26px 0 6px"><span style="display:inline-block;background:linear-gradient(135deg,${accent[0]},${accent[1]});color:#fff;padding:13px 30px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none">${label}</span></div>`;
 function detailCard(rows, accent) {
-  const items = rows.map(([k, v]) => `<tr><td style="padding:7px 0;font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;font-weight:700;width:38%">${k}</td><td style="padding:7px 0;font-size:14px;color:#1f2937;font-weight:600">${v}</td></tr>`).join('');
-  return `<table style="width:100%;border-collapse:collapse;background:#faf8ff;border:1px solid #ede9fe;border-radius:14px;padding:6px 18px;margin:6px 0 20px"><tbody style="display:block;padding:6px 18px">${items}</tbody></table>`;
+  const items = rows.map(([k, v]) => `<tr><td style="padding:7px 0;font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;font-weight:700;width:38%">${k}</td><td style="padding:7px 0;font-size:14px;color:#1a1a2e;font-weight:600">${v}</td></tr>`).join('');
+  return `<table style="width:100%;border-collapse:collapse;background:#faf5e9;border:1px solid #efe6d4;border-radius:14px;padding:6px 18px;margin:6px 0 20px"><tbody style="display:block;padding:6px 18px">${items}</tbody></table>`;
 }
 
 // ---- Templates -----------------------------------------------------------------
 export const TEMPLATES = {
-  intro: { label: 'Cold Intro', accent: ['#7C3AED', '#EC4899'], hint: 'Introduce the ensemble to a new prospect' },
-  outreach: { label: 'Initial Outreach', accent: ['#7C3AED', '#EC4899'], hint: 'Warm first reply to a new inquiry' },
-  followup: { label: 'Gentle Follow-up', accent: ['#06B6D4', '#3B82F6'], hint: 'Friendly nudge if you haven’t heard back' },
-  confirmation: { label: 'Booking Confirmation', accent: ['#10B981', '#06B6D4'], hint: 'Lock in the details once confirmed' },
-  thanks: { label: 'Thank You', accent: ['#F59E0B', '#FB7185'], hint: 'A note of thanks after the performance' },
+  intro: { label: 'Cold Intro', accent: ['#0d1a30', '#1c3564'], hint: 'Introduce the ensemble to a new prospect' },
+  outreach: { label: 'Initial Outreach', accent: ['#0d1a30', '#1c3564'], hint: 'Warm first reply to a new inquiry' },
+  followup: { label: 'Gentle Follow-up', accent: ['#20a89a', '#3898d4'], hint: 'Friendly nudge if you haven’t heard back' },
+  confirmation: { label: 'Booking Confirmation', accent: ['#20a89a', '#1c8f82'], hint: 'Lock in the details once confirmed' },
+  thanks: { label: 'Thank You', accent: ['#e8b430', '#e07830'], hint: 'A note of thanks after the performance' },
 };
 
 export function buildEmail(type, lead) {
@@ -131,7 +134,7 @@ export function buildEmail(type, lead) {
 
 // Availability request sent to the ensemble's singers for a specific event.
 export function buildAvailabilityEmail(ev) {
-  const accent = ['#F59E0B', '#FB7185'];
+  const accent = ['#e8b430', '#e07830'];
   const when = fmtDate(ev.event_date);
   const subject = `Are you in? — ${ev.title}`;
   const text = `Hi everyone,\n\nWe have a possible booking and I need to know who's available:\n\n  ${ev.title}\n  ${when}${ev.event_time ? ' at ' + ev.event_time : ''}\n  ${ev.venue || ''}\n\nPlease reply YES, NO, or MAYBE as soon as you can so I can confirm with the client.\n\nThank you!\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}`;
@@ -143,7 +146,7 @@ export function buildAvailabilityEmail(ev) {
 // Program proposal sent to the client for a confirmed/upcoming event.
 // `songTitles` is an array of the planned pieces for the event.
 export function buildProposalEmail(ev, songTitles = [], clientName = '') {
-  const accent = ['#7C3AED', '#EC4899'];
+  const accent = ['#0d1a30', '#1c3564'];
   const when = fmtDate(ev.event_date);
   const subject = `Your program — The Masterpieces at ${ev.title}`;
   const list = songTitles.length ? songTitles : ['(program to be finalized)'];
@@ -157,7 +160,7 @@ export function buildProposalEmail(ev, songTitles = [], clientName = '') {
     `We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`,
     `Looking forward to singing for you!`,
   ].join('\n');
-  const htmlList = `<ol style="margin:0 0 18px;padding-left:22px">${list.map(t => `<li style="font-size:14px;line-height:1.8;color:#1f2937;font-weight:600">${t}</li>`).join('')}</ol>`;
+  const htmlList = `<ol style="margin:0 0 18px;padding-left:22px">${list.map(t => `<li style="font-size:14px;line-height:1.8;color:#1a1a2e;font-weight:600">${t}</li>`).join('')}</ol>`;
   const html = shell(
     p(`Hi ${clientName ? first(clientName) : 'there'},`) +
     p(`Thank you again for having <strong>The Masterpieces</strong>! Here's the program we've put together for <strong>${ev.title}</strong>${ev.event_date ? ` on <strong>${when}</strong>` : ''}:`) +

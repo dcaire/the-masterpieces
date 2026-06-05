@@ -29,25 +29,23 @@ export const Defs = () => (
   </svg>
 );
 
-// Brand crest — "a framed masterpiece, sung in four voices."
-// A gilded gallery frame over a deep-plum tile, a treble clef, and the four
-// the four voices (Soprano · Alto · Tenor · Bass) as a colored chord.
+// Brand mark — navy tile, a five-line staff, a gold treble clef, and the
+// signature five-bar stripe (gold·copper·rose·teal·iris) along the base.
 export const Logo = ({ size = 38 }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="13" fill="url(#gPlum)" />
-    {/* gilded gallery frame */}
-    <rect x="6" y="6" width="36" height="36" rx="9.5" fill="none" stroke="url(#gFrame)" strokeWidth="2.2" />
-    <rect x="9.5" y="9.5" width="29" height="29" rx="6.5" fill="none" stroke="#F6E3A6" strokeWidth="1" opacity=".45" />
-    {/* treble clef, shifted left to leave room for the chord */}
-    <g transform="translate(-5.4 0) scale(.9)" fill="#FBF3DC">
-      <path d="M27.5 12c-2.6.9-4.1 3.2-4.1 6 0 2 .7 3.4 2.4 5.5l.7.9-.5 3.1c-1-.5-1.9-.7-2.9-.7-3 0-5.1 2-5.1 4.8 0 2.7 2 4.6 4.8 4.6 2.9 0 5-2 5-5.1 0-.6 0-.9-.3-2.5l-.3-1.7c2.3.8 3.6 2.3 3.6 4.2 0 .8-.2 1.4-.8 2.2-.2.3-.2.3-.1.4.3.2 1.6-1 2-1.9.3-.6.4-1.1.4-1.9 0-2.6-1.8-4.6-4.8-5.4l-.5-.1.3-2c1.9-2 2.6-3.6 2.6-5.7 0-2.3-.9-3.9-2.4-4.5-.4-.1-.5-.1-.6 0Zm.8 2c.5.6.7 1.4.7 2.5 0 1.6-.5 2.8-1.8 4.3l-.4.4-.2-1.1c-.4-2.1-.2-4 .6-5.3.5-.8.9-1 1.3-.8Zm-5 14.6c.4.1.8.2 1.2.4l.3 1.9c.2 1.4.2 1.6.2 2.1 0 1.7-1 2.8-2.5 2.8s-2.6-1.1-2.6-2.7c0-1.8 1.6-3.1 3.4-2.5Z" />
+    <rect width="48" height="48" rx="13" fill="#0d1a30" />
+    {/* staff lines */}
+    {[15, 19.5, 24, 28.5, 33].map(y => <line key={y} x1="8" y1={y} x2="40" y2={y} stroke="#e8b430" strokeWidth="0.6" opacity="0.26" />)}
+    {/* treble clef (brand path) */}
+    <g transform="translate(13.5 6.5) scale(0.5)">
+      <path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke="#e8b430" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     </g>
-    {/* the four voices, as a rising chord with a shared stem */}
-    <rect x="32.4" y="15" width="1.5" height="16.5" rx=".75" fill="#F6E3A6" opacity=".8" />
-    <circle cx="29.5" cy="30.5" r="2.5" fill="#F472B6" />
-    <circle cx="29.5" cy="26" r="2.5" fill="#A78BFA" />
-    <circle cx="29.5" cy="21.5" r="2.5" fill="#FBBF24" />
-    <circle cx="29.5" cy="17" r="2.5" fill="#22D3EE" />
+    {/* five-bar stripe */}
+    <rect x="8" y="39" width="6.4" height="3" fill="#e8b430" />
+    <rect x="14.4" y="39" width="6.4" height="3" fill="#e07830" />
+    <rect x="20.8" y="39" width="6.4" height="3" fill="#d03a6a" />
+    <rect x="27.2" y="39" width="6.4" height="3" fill="#20a89a" />
+    <rect x="33.6" y="39" width="6.4" height="3" fill="#7b52c4" />
   </svg>
 );
 

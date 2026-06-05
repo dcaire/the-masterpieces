@@ -102,7 +102,7 @@ export default function App() {
   const [ld, sLd] = useState(true); const [err, sErr] = useState(null); const [toast, sTst] = useState(null)
   const [sInq, sSInq] = useState(null); const [sEv, sSEv] = useState(null); const [sSng, sSSng] = useState(null)
   const [rf, sRf] = useState('all'); const [lf, sLf] = useState('all'); const [mf, sMf] = useState('all'); const [q, sQ] = useState('')
-  const [shS, sShS] = useState(false); const [shI, sShI] = useState(false); const [shM, sShM] = useState(false)
+  const [shS, sShS] = useState(false); const [shI, sShI] = useState(false); const [shM, sShM] = useState(false); const [shG, sShG] = useState(false)
   const [eSng, sESng] = useState(null) // roster id being edited
   const [eMus, sEMus] = useState(null) // music_library id being edited
   const [eInq, sEInq] = useState(null) // inquiry id being edited
@@ -145,6 +145,7 @@ export default function App() {
   const updRI = async (inqId, rid, resp) => { const ex = A.find(a => a.inquiry_id === inqId && a.roster_id === rid); if (ex) { await sb.from('member_availability').update({ response: resp }).eq('id', ex.id); sA(p => p.map(a => a.id === ex.id ? { ...a, response: resp } : a)) } else { const { data: ins } = await sb.from('member_availability').insert({ inquiry_id: inqId, roster_id: rid, response: resp }).select().single(); if (ins) sA(p => [...p, ins]) } }
   const setFmt = async (id, f) => { const patch = { format: f, singers_needed: fmtNeed(f) }; await sb.from('inquiries').update(patch).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); noti(`Format → ${f} (needs ${fmtNeed(f)})`) }
   const addS = async d => { const { data: ins } = await sb.from('roster').insert({ name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type, active: true }).select().single(); if (ins) { sR(p => [...p, ins]); sShS(false); noti(`${d.name} added`) } }
+  const addG = async d => { const { data: ins } = await sb.from('roster').insert({ name: d.name, phone: d.phone || '', email: d.email, voice_part: d.voicePart, singer_type: 'guest', active: true }).select().single(); if (ins) { sR(p => [...p, ins]); sShG(false); noti(`Guest ${d.name} added — invite them above`) } }
   const updS = async d => { const id = eSng; const patch = { name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type }; const { error } = await sb.from('roster').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sR(p => p.map(r => r.id === id ? { ...r, ...patch } : r)); sESng(null); noti(`${d.name} updated`) }
   const updM = async d => { const id = eMus; const patch = { title: d.title, arranger: d.arranger, category: d.category, pages: d.pages, file_size_mb: d.size, cloud_only: d.dest === 'Cloud only' }; const { error } = await sb.from('music_library').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sM(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEMus(null); noti(`“${d.title}” updated`) }
   const updI = async d => { const id = eInq; const patch = { contact_name: d.contact, organization: d.org, phone: d.phone, email: d.email, event_date: d.eventDate || null, event_type: d.eventType, format: d.format || 'Quartet', singers_needed: fmtNeed(d.format), expected_donation: d.expectedDonation, notes: d.notes }; const { error } = await sb.from('inquiries').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sI(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEInq(null); noti('Booking updated') }
@@ -193,13 +194,14 @@ export default function App() {
       {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }} />}
       {tab === 'ensemble' && <Ensemble {...{ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
-      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
-      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg }} />}
+      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG }} />}
     </main>
 
     {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng }} />}
     {shS && <FModal t="Add a Singer" sub="Add a core member or guest singer" onX={() => sShS(false)} onOk={addS} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: 'member' }]} />}
+    {shG && <FModal t="Invite a Guest Singer" sub="Bring in a sub to fill out the lineup" onX={() => sShG(false)} onOk={addG} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'email', l: 'Email (so you can invite them)', rq: 1 }, { k: 'phone', l: 'Phone' }]} />}
     {eSng != null && (() => { const s = R.find(r => r.id === eSng); return s ? <FModal t="Edit Singer" sub={`Update ${s.name}’s details`} onX={() => sESng(null)} onOk={updS} fs={[{ k: 'name', l: 'Full name', rq: 1, df: s.name }, { k: 'phone', l: 'Phone', df: s.phone || '' }, { k: 'email', l: 'Email', df: s.email || '' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: s.voice_part }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: s.singer_type }]} /> : null })()}
     {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'format', l: 'Performance format (sets singers needed)', ty: 'sel', opts: FORMATS, df: 'Quartet' }, { k: 'expectedDonation', l: 'Expected fee ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
     {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: 'Jazz' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
@@ -408,7 +410,7 @@ function AvailabilityRows({ aR, ea, onSet }) {
 }
 
 /* ---------- bookings (leads) ---------- */
-function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt }) {
+function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG }) {
   const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
   const fd = I.filter(i => lf === 'all' || i.status === lf)
   const od = I.filter(i => i.status !== 'lost' && i.next_follow_up && new Date(i.next_follow_up + 'T12:00:00') < new Date())
@@ -434,11 +436,11 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
           {!isDJ && <div style={{ border: `1px solid ${covered ? '#A7E8C6' : '#efe6d4'}`, background: covered ? '#eafaf1' : '#fff', borderRadius: 13, padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
               <SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle>
-              <Btn small grad={G.amber} onClick={() => sEmail({ availability: availObj, fromInquiry: inq.id })}><Send size={14} />Email Availability</Btn>
+              <div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn><Btn small grad={G.amber} onClick={() => sEmail({ availability: availObj, fromInquiry: inq.id })}><Send size={14} />Email Availability</Btn></div>
             </div>
             <AvailabilityRows aR={aR} ea={ea} onSet={(rid, r) => updRI(inq.id, rid, r)} />
             <div style={{ marginTop: 14, padding: '11px 14px', borderRadius: 11, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, background: covered ? '#D1FAE5' : '#FEF3C7', color: covered ? '#047857' : '#B45309' }}>{covered ? <><Check size={16} />Lineup covered — clear to confirm with the client.</> : <><Bell size={16} />{need - yc} more needed. Reach out, or downsize the booking below.</>}</div>
-            {!covered && <div style={{ display: 'flex', gap: 9, marginTop: 12, flexWrap: 'wrap' }}><Btn small ghost onClick={() => setFmt(inq.id, smaller)}><Arrow size={14} />Downsize to {smaller}</Btn><Btn small ghost onClick={() => setFmt(inq.id, 'DJ')}>Make it a DJ engagement</Btn></div>}
+            {!covered && <div style={{ display: 'flex', gap: 9, marginTop: 12, flexWrap: 'wrap' }}><Btn small grad={G.purple} onClick={() => sShG(true)}><Plus size={14} />Invite a guest singer</Btn><Btn small ghost onClick={() => setFmt(inq.id, smaller)}><Arrow size={14} />Downsize to {smaller}</Btn><Btn small ghost onClick={() => setFmt(inq.id, 'DJ')}>Make it a DJ engagement</Btn></div>}
           </div>}
           {isDJ && <div style={{ border: '1px solid #efe6d4', background: '#faf5e9', borderRadius: 13, padding: '14px 16px', marginBottom: 20, fontSize: 13, color: '#4a4a5e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}><span><b>DJ engagement</b> — no singers required.</span><Btn small ghost onClick={() => setFmt(inq.id, 'Quartet')}>Back to a singing format</Btn></div>}
           <div style={{ background: isOD ? '#FEF2F2' : '#faf5e9', border: `1px solid ${isOD ? '#FECACA' : '#efe6d4'}`, borderRadius: 13, padding: 16, marginBottom: 20 }}>
@@ -556,7 +558,7 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 }
 
 /* ---------- events ---------- */
-function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg }) {
+function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG }) {
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
     return <div className="fade">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><BackBtn onClick={() => sSEv(null)} /><Btn ghost small onClick={() => sEEv(ev.id)}><Pencil size={14} />Edit Event</Btn></div>
@@ -569,7 +571,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
           <div style={{ marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 11, padding: '11px 15px', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>{need === 0 ? <><Check size={17} />DJ engagement — no singers required.</> : ok ? <><Check size={17} />{yc} confirmed — full {ev.format || 'lineup'}!</> : <><Bell size={17} />{yc} confirmed{pc ? `, ${pc} pending` : ''} — need {need}.</>}</div>
         </div>
         <div style={{ padding: 26 }}>
-          {need > 0 && <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><Btn small grad={G.amber} onClick={() => sEmail({ availability: ev })}><Send size={14} />Email Request</Btn></div>
+          {need > 0 && <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn><Btn small grad={G.amber} onClick={() => sEmail({ availability: ev })}><Send size={14} />Email Request</Btn></div></div>
           <div style={{ marginBottom: 22 }}><AvailabilityRows aR={aR} ea={ea} onSet={(rid, r) => updR(ev.id, rid, r)} /></div></>}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShProg(ev.id)}><Plus size={14} />Edit Program</Btn>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf5e9', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f0e8d6' : '#D1FAE5'} fg={s.cloud_only ? '#6e6e82' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>

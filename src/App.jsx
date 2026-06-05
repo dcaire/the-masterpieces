@@ -102,7 +102,7 @@ export default function App() {
   const [ld, sLd] = useState(true); const [err, sErr] = useState(null); const [toast, sTst] = useState(null)
   const [sInq, sSInq] = useState(null); const [sEv, sSEv] = useState(null); const [sSng, sSSng] = useState(null)
   const [rf, sRf] = useState('all'); const [lf, sLf] = useState('all'); const [mf, sMf] = useState('all'); const [q, sQ] = useState('')
-  const [shS, sShS] = useState(false); const [shI, sShI] = useState(false); const [shM, sShM] = useState(false); const [shG, sShG] = useState(false)
+  const [shS, sShS] = useState(false); const [shI, sShI] = useState(false); const [shM, sShM] = useState(false); const [shG, sShG] = useState(false); const [pickFor, sPickFor] = useState(null)
   const [eSng, sESng] = useState(null) // roster id being edited
   const [eMus, sEMus] = useState(null) // music_library id being edited
   const [eInq, sEInq] = useState(null) // inquiry id being edited
@@ -143,6 +143,8 @@ export default function App() {
   const logFU = async id => { const t = new Date().toISOString().split('T')[0], n = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]; await sb.from('inquiries').update({ last_follow_up: t, next_follow_up: n }).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, last_follow_up: t, next_follow_up: n } : x)); noti('Follow-up logged · next in 7 days') }
   const addI = async d => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: d.contact, organization: d.org, phone: d.phone, email: d.email, event_date: d.eventDate || null, event_type: d.eventType, format: d.format || 'Quartet', singers_needed: fmtNeed(d.format), expected_donation: d.expectedDonation, notes: d.notes, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); sShI(false); noti('Booking inquiry added') } }
   const updRI = async (inqId, rid, resp) => { const ex = A.find(a => a.inquiry_id === inqId && a.roster_id === rid); if (ex) { await sb.from('member_availability').update({ response: resp }).eq('id', ex.id); sA(p => p.map(a => a.id === ex.id ? { ...a, response: resp } : a)) } else { const { data: ins } = await sb.from('member_availability').insert({ inquiry_id: inqId, roster_id: rid, response: resp }).select().single(); if (ins) sA(p => [...p, ins]) } }
+  // toggle a singer in/out of an event's invited lineup (pending = invited, not yet replied)
+  const togSel = async (scope, id, rid) => { const fld = scope === 'event' ? 'event_id' : 'inquiry_id'; const ex = A.find(a => a[fld] === id && a.roster_id === rid); if (ex) { await sb.from('member_availability').delete().eq('id', ex.id); sA(p => p.filter(a => a.id !== ex.id)) } else { const { data: ins } = await sb.from('member_availability').insert({ [fld]: id, roster_id: rid, response: 'pending' }).select().single(); if (ins) sA(p => [...p, ins]) } }
   const setFmt = async (id, f) => { const patch = { format: f, singers_needed: fmtNeed(f) }; await sb.from('inquiries').update(patch).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); noti(`Format → ${f} (needs ${fmtNeed(f)})`) }
   const addS = async d => { const { data: ins } = await sb.from('roster').insert({ name: d.name, phone: d.phone, email: d.email, voice_part: d.voicePart, singer_type: d.type, active: true }).select().single(); if (ins) { sR(p => [...p, ins]); sShS(false); noti(`${d.name} added`) } }
   const addG = async d => { const { data: ins } = await sb.from('roster').insert({ name: d.name, phone: d.phone || '', email: d.email, voice_part: d.voicePart, singer_type: 'guest', active: true }).select().single(); if (ins) { sR(p => [...p, ins]); sShG(false); noti(`Guest ${d.name} added — invite them above`) } }
@@ -194,14 +196,15 @@ export default function App() {
       {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }} />}
       {tab === 'ensemble' && <Ensemble {...{ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
-      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sPickFor }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
-      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG }} />}
+      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sPickFor }} />}
     </main>
 
     {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng }} />}
     {shS && <FModal t="Add a Singer" sub="Add a core member or guest singer" onX={() => sShS(false)} onOk={addS} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: 'member' }]} />}
     {shG && <FModal t="Invite a Guest Singer" sub="Bring in a sub to fill out the lineup" onX={() => sShG(false)} onOk={addG} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'email', l: 'Email (so you can invite them)', rq: 1 }, { k: 'phone', l: 'Phone' }]} />}
+    {pickFor && <SingerPicker pick={pickFor} aR={aR} ea={(pickFor.scope === 'event' ? aM : aMI)[pickFor.id] || {}} onTog={rid => togSel(pickFor.scope, pickFor.id, rid)} onGuest={() => sShG(true)} onX={() => sPickFor(null)} />}
     {eSng != null && (() => { const s = R.find(r => r.id === eSng); return s ? <FModal t="Edit Singer" sub={`Update ${s.name}’s details`} onX={() => sESng(null)} onOk={updS} fs={[{ k: 'name', l: 'Full name', rq: 1, df: s.name }, { k: 'phone', l: 'Phone', df: s.phone || '' }, { k: 'email', l: 'Email', df: s.email || '' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: s.voice_part }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: s.singer_type }]} /> : null })()}
     {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'format', l: 'Performance format (sets singers needed)', ty: 'sel', opts: FORMATS, df: 'Quartet' }, { k: 'expectedDonation', l: 'Expected fee ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
     {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: 'Jazz' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
@@ -410,13 +413,15 @@ function AvailabilityRows({ aR, ea, onSet }) {
 }
 
 /* ---------- bookings (leads) ---------- */
-function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG }) {
+function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sPickFor }) {
   const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
   const fd = I.filter(i => lf === 'all' || i.status === lf)
   const od = I.filter(i => i.status !== 'lost' && i.next_follow_up && new Date(i.next_follow_up + 'T12:00:00') < new Date())
 
   if (sInq) { const inq = I.find(i => i.id === sInq); if (!inq) return null; const isOD = inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date()
     const need = inq.singers_needed ?? 4; const ea = aMI[inq.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const covered = yc >= need; const isDJ = need === 0; const smaller = NEED_LABEL[Math.max(0, need - 1)]
+    const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
+    const pickInq = () => sPickFor({ scope: 'inquiry', id: inq.id, title: `${inq.event_type || 'Booking'} · ${inq.organization || ''}`, need })
     const availObj = { title: `${inq.event_type || 'Performance'} · ${inq.organization || ''}`, event_date: inq.event_date, event_time: '', venue: inq.organization || '' }
     return <div className="fade">
       <BackBtn onClick={() => sSInq(null)} />
@@ -436,11 +441,13 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
           {!isDJ && <div style={{ border: `1px solid ${covered ? '#A7E8C6' : '#efe6d4'}`, background: covered ? '#eafaf1' : '#fff', borderRadius: 13, padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
               <SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle>
-              <div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn><Btn small grad={G.amber} onClick={() => sEmail({ availability: availObj, fromInquiry: inq.id })}><Send size={14} />Email Availability</Btn></div>
+              <div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={pickInq}><Users size={14} />Select singers</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: availObj, recipients: recips })}><Send size={14} />Email Availability</Btn>}</div>
             </div>
-            <AvailabilityRows aR={aR} ea={ea} onSet={(rid, r) => updRI(inq.id, rid, r)} />
-            <div style={{ marginTop: 14, padding: '11px 14px', borderRadius: 11, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, background: covered ? '#D1FAE5' : '#FEF3C7', color: covered ? '#047857' : '#B45309' }}>{covered ? <><Check size={16} />Lineup covered — clear to confirm with the client.</> : <><Bell size={16} />{need - yc} more needed. Reach out, or downsize the booking below.</>}</div>
-            {!covered && <div style={{ display: 'flex', gap: 9, marginTop: 12, flexWrap: 'wrap' }}><Btn small grad={G.purple} onClick={() => sShG(true)}><Plus size={14} />Invite a guest singer</Btn><Btn small ghost onClick={() => setFmt(inq.id, smaller)}><Arrow size={14} />Downsize to {smaller}</Btn><Btn small ghost onClick={() => setFmt(inq.id, 'DJ')}>Make it a DJ engagement</Btn></div>}
+            {sel.length ? <>
+              <AvailabilityRows aR={sel} ea={ea} onSet={(rid, r) => updRI(inq.id, rid, r)} />
+              <div style={{ marginTop: 14, padding: '11px 14px', borderRadius: 11, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, background: covered ? '#D1FAE5' : '#FEF3C7', color: covered ? '#047857' : '#B45309' }}>{covered ? <><Check size={16} />Lineup covered — clear to confirm with the client.</> : <><Bell size={16} />{need - yc} more needed. Add singers, or downsize the booking below.</>}</div>
+              {!covered && <div style={{ display: 'flex', gap: 9, marginTop: 12, flexWrap: 'wrap' }}><Btn small grad={G.purple} onClick={pickInq}><Plus size={14} />Select more singers</Btn><Btn small ghost onClick={() => setFmt(inq.id, smaller)}><Arrow size={14} />Downsize to {smaller}</Btn><Btn small ghost onClick={() => setFmt(inq.id, 'DJ')}>Make it a DJ engagement</Btn></div>}
+            </> : <div style={{ textAlign: 'center', padding: '18px 12px', color: '#8a8598' }}><div style={{ fontSize: 13.5, marginBottom: 12 }}>No singers picked yet — build the lineup for this event.</div><Btn small grad={G.purple} onClick={pickInq}><Users size={14} />Select singers</Btn></div>}
           </div>}
           {isDJ && <div style={{ border: '1px solid #efe6d4', background: '#faf5e9', borderRadius: 13, padding: '14px 16px', marginBottom: 20, fontSize: 13, color: '#4a4a5e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}><span><b>DJ engagement</b> — no singers required.</span><Btn small ghost onClick={() => setFmt(inq.id, 'Quartet')}>Back to a singing format</Btn></div>}
           <div style={{ background: isOD ? '#FEF2F2' : '#faf5e9', border: `1px solid ${isOD ? '#FECACA' : '#efe6d4'}`, borderRadius: 13, padding: 16, marginBottom: 20 }}>
@@ -558,8 +565,9 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 }
 
 /* ---------- events ---------- */
-function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG }) {
+function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sPickFor }) {
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
+    const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(','); const pickEv = () => sPickFor({ scope: 'event', id: ev.id, title: ev.title, need })
     return <div className="fade">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><BackBtn onClick={() => sSEv(null)} /><Btn ghost small onClick={() => sEEv(ev.id)}><Pencil size={14} />Edit Event</Btn></div>
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -571,8 +579,8 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
           <div style={{ marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 11, padding: '11px 15px', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>{need === 0 ? <><Check size={17} />DJ engagement — no singers required.</> : ok ? <><Check size={17} />{yc} confirmed — full {ev.format || 'lineup'}!</> : <><Bell size={17} />{yc} confirmed{pc ? `, ${pc} pending` : ''} — need {need}.</>}</div>
         </div>
         <div style={{ padding: 26 }}>
-          {need > 0 && <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn><Btn small grad={G.amber} onClick={() => sEmail({ availability: ev })}><Send size={14} />Email Request</Btn></div></div>
-          <div style={{ marginBottom: 22 }}><AvailabilityRows aR={aR} ea={ea} onSet={(rid, r) => updR(ev.id, rid, r)} /></div></>}
+          {need > 0 && <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={pickEv}><Users size={14} />Select singers</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: ev, recipients: recips })}><Send size={14} />Email Request</Btn>}</div></div>
+          {sel.length ? <div style={{ marginBottom: 22 }}><AvailabilityRows aR={sel} ea={ea} onSet={(rid, r) => updR(ev.id, rid, r)} /></div> : <div style={{ textAlign: 'center', padding: '18px 12px', marginBottom: 22, color: '#8a8598' }}><div style={{ fontSize: 13.5, marginBottom: 12 }}>No singers picked yet — build the lineup for this event.</div><Btn small grad={G.purple} onClick={pickEv}><Users size={14} />Select singers</Btn></div>}</>}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShProg(ev.id)}><Plus size={14} />Edit Program</Btn>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf5e9', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f0e8d6' : '#D1FAE5'} fg={s.cloud_only ? '#6e6e82' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
         </div>
@@ -594,6 +602,27 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
       <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#1c3564' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 && ev.event_date ? '#EF4444' : '#8a8598' }}>{!ev.event_date ? 'Set date' : d > 0 ? `${d} days` : 'Past'}</div></div>
     </div> })}{!E.length && <Empty>No events scheduled.</Empty>}</div>
   </div>
+}
+
+/* ---------- singer picker (build the invited lineup for an event) ---------- */
+function SingerPicker({ pick, aR, ea, onTog, onGuest, onX }) {
+  const order = { Soprano: 0, Alto: 1, Tenor: 2, Bass: 3 }
+  const list = [...aR].sort((a, b) => (order[a.voice_part] ?? 9) - (order[b.voice_part] ?? 9))
+  const n = Object.keys(ea).length
+  return <Modal onX={onX}>
+    <div style={{ background: G.purple, padding: '20px 26px', color: '#fff' }}><h2 className="serif" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>Build the Lineup</h2><div className="ui" style={{ fontSize: 12, opacity: .9, marginTop: 2 }}>{pick.title} · {n} selected{pick.need ? ` · needs ${pick.need}` : ''}</div></div>
+    <div style={{ padding: 22 }}>
+      <div style={{ fontSize: 12.5, color: '#8a8598', marginBottom: 12 }}>Pick the singers most appropriate for this event. They’ll appear on the availability panel, and only they get the availability email.</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 340, overflow: 'auto' }}>
+        {list.map(m => { const on = ea[m.id] !== undefined; const pcv = VP[m.voice_part] || VP.Soprano; return <button key={m.id} onClick={() => onTog(m.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 13px', borderRadius: 11, border: `1px solid ${on ? '#1c3564' : '#e2d6bd'}`, background: on ? '#eef2fb' : '#fff', textAlign: 'left' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}><Avatar name={m.name} part={m.voice_part} type={m.singer_type} size={34} /><div><div style={{ fontSize: 13.5, fontWeight: 700, color: '#1a1a2e' }}>{m.name}</div><div style={{ display: 'flex', gap: 5, marginTop: 2, alignItems: 'center' }}><Pill bg={pcv.bg} fg={pcv.fg}>{m.voice_part}</Pill>{m.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">guest</Pill>}{!m.email && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#c0392b' }}>no email</span>}</div></div></div>
+          <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: on ? '#1c3564' : '#f0e8d6', color: on ? '#fff' : '#8a8598', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{on ? <Check size={15} /> : <Plus size={15} />}</span>
+        </button> })}
+        {!list.length && <Empty>No active singers — add singers in the Ensemble tab first.</Empty>}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 }}><Btn small ghost onClick={onGuest}><Plus size={14} />Add guest singer</Btn><Btn grad={G.purple} onClick={onX}><Check size={15} />Done</Btn></div>
+    </div>
+  </Modal>
 }
 
 /* ---------- program picker (build an event's set list) ---------- */
@@ -626,14 +655,13 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
   const ev = email.availability || email.proposal
   const defType = isFollowup ? (lead.status === 'prospect' ? 'intro' : lead.status === 'contacted' ? 'followup' : lead.status === 'confirmed' ? 'confirmation' : lead.status === 'lost' ? 'thanks' : 'outreach') : null
   const [type, sType] = useState(defType)
-  const [picked, setPicked] = useState([]) // singer ids for availability email — starts empty
   const built = useMemo(() => isAvail ? buildAvailabilityEmail(ev) : isProposal ? buildProposalEmail(email.proposal, email.songs) : buildEmail(type, lead), [type, isAvail, isProposal, lead, ev, email.songs, email.proposal])
   const [subject, sSubject] = useState(built.subject)
   const [body, sBody] = useState(built.text)
   useEffect(() => { sSubject(built.subject); sBody(built.text) }, [built])
 
   const accent = isAvail ? G.amber : G.purple
-  const recipients = isAvail ? aR.filter(m => picked.includes(m.id) && m.email).map(m => m.email).join(',') : isProposal ? '' : (lead.email || '')
+  const recipients = isAvail ? (email.recipients || '') : isProposal ? '' : (lead.email || '')
   const copy = async (html) => {
     try {
       if (html && navigator.clipboard && navigator.clipboard.write) await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([built.html], { type: 'text/html' }), 'text/plain': new Blob([body], { type: 'text/plain' }) })])
@@ -652,9 +680,8 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
       <div style={{ padding: 22, overflowY: 'auto', borderRight: '1px solid #efe6d4' }}>
         {isFollowup && <><SectionTitle>Template</SectionTitle><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>{Object.entries(TEMPLATES).map(([k, t]) => <button key={k} onClick={() => sType(k)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 11, border: type === k ? '2px solid #1c3564' : '1px solid #e2d6bd', background: type === k ? '#faf3e6' : '#fff' }}><div style={{ fontSize: 12.5, fontWeight: 800, color: type === k ? '#1c3564' : '#1a1a2e' }}>{t.label}</div><div style={{ fontSize: 10.5, color: '#8a8598', marginTop: 2 }}>{t.hint}</div></button>)}</div></>}
-        {isAvail && <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><SectionTitle>Ask which singers</SectionTitle><button onClick={() => setPicked(picked.length === aR.length ? [] : aR.map(m => m.id))} style={{ fontSize: 11, fontWeight: 700, color: '#1c3564' }}>{picked.length === aR.length ? 'Clear' : 'Select all'}</button></div><div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>{aR.map(m => { const on = picked.includes(m.id); const pcv = VP[m.voice_part] || VP.Soprano; return <button key={m.id} onClick={() => setPicked(on ? picked.filter(x => x !== m.id) : [...picked, m.id])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 12px', borderRadius: 10, border: `1px solid ${on ? '#1c3564' : '#e2d6bd'}`, background: on ? '#eef2fb' : '#fff', textAlign: 'left' }}><div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: pcv.fg, flexShrink: 0 }} /><span style={{ fontSize: 13, fontWeight: 700 }}>{m.name}</span><span style={{ fontSize: 11, color: '#8a8598' }}>{m.voice_part}{!m.email ? ' · no email' : ''}</span></div><span style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: on ? '#1c3564' : '#f0e8d6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{on ? <Check size={13} /> : <Plus size={13} />}</span></button> })}</div></>}
         <SectionTitle>Recipients</SectionTitle>
-        <div style={{ fontSize: 12.5, color: recipients ? '#4b5563' : '#8a8598', background: '#faf5e9', borderRadius: 10, padding: '9px 12px', marginBottom: 16, wordBreak: 'break-all' }}>{recipients || (isAvail ? 'Pick singers above to email' : isProposal ? 'Add the client’s email in your mail app' : 'No email address on file')}</div>
+        <div style={{ fontSize: 12.5, color: recipients ? '#4b5563' : '#8a8598', background: '#faf5e9', borderRadius: 10, padding: '9px 12px', marginBottom: 16, wordBreak: 'break-all' }}>{recipients || (isAvail ? 'No emails on file for the picked singers' : isProposal ? 'Add the client’s email in your mail app' : 'No email address on file')}</div>
         <SectionTitle>Subject</SectionTitle>
         <input value={subject} onChange={e => sSubject(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px solid #e2d6bd', fontSize: 13.5, marginBottom: 16 }} />
         <SectionTitle>Message</SectionTitle>

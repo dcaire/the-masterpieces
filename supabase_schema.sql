@@ -92,3 +92,6 @@ alter table public.events    add column if not exists format text not null defau
 alter table public.events    add column if not exists singers_needed integer not null default 4;
 alter table public.member_availability add column if not exists inquiry_id bigint;
 create index if not exists member_availability_inquiry_idx on public.member_availability (inquiry_id);
+
+-- Availability attaches to an inquiry OR an event, so event_id must allow NULL.
+alter table public.member_availability alter column event_id drop not null;

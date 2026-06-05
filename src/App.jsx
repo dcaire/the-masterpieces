@@ -169,7 +169,7 @@ export default function App() {
   if (ld) return <Splash />
   if (err) return <ErrorView err={err} />
 
-  const tabs = [['dashboard', 'Dashboard', Sparkle], ['ensemble', 'Ensemble', Users], ['music', 'Music', Note], ['bookings', 'Bookings', Mail], ['prospects', 'Prospects', Target], ['events', 'Events', Calendar]]
+  const tabs = [['dashboard', 'Dashboard', Sparkle], ['ensemble', 'Ensemble', Users], ['bookings', 'Bookings', Mail], ['events', 'Events', Calendar], ['music', 'Music', Note], ['prospects', 'Prospects', Target]]
 
   return <div style={{ position: 'relative', zIndex: 1 }}>
     <style>{css}</style><Defs /><div className="mesh" />

@@ -132,6 +132,7 @@ export default function App() {
   const aMI = useMemo(() => { const o = {}; A.forEach(a => { if (a.inquiry_id != null) (o[a.inquiry_id] ||= {})[a.roster_id] = a.response }); return o }, [A])
   const aR = R.filter(r => r.active)
   const core = aR.filter(r => r.singer_type === 'member'); const guests = aR.filter(r => r.singer_type === 'guest')
+  const dirs = aR.filter(r => r.singer_type === 'director'); const lineupR = aR.filter(r => r.singer_type !== 'director') // directors/managers don't sing
   const tMB = M.reduce((s, x) => s + Number(x.file_size_mb), 0).toFixed(1)
   const sN = M.filter(x => !x.cloud_only).length; const sMB = M.filter(x => !x.cloud_only).reduce((s, x) => s + Number(x.file_size_mb), 0).toFixed(1)
   const pFU = I.filter(x => x.status !== 'lost' && x.next_follow_up && new Date(x.next_follow_up + 'T12:00:00') <= new Date(Date.now() + 3 * 86400000)).length
@@ -194,11 +195,11 @@ export default function App() {
 
     <main style={{ maxWidth: 1180, margin: '0 auto', padding: '30px 22px 70px' }}>
       {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }} />}
-      {tab === 'ensemble' && <Ensemble {...{ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
+      {tab === 'ensemble' && <Ensemble {...{ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
-      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG, togSel }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
-      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel }} />}
+      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel }} />}
     </main>
 
     {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng }} />}
@@ -321,7 +322,7 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }
 }
 
 /* ---------- ensemble (roster) ---------- */
-function Ensemble({ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }) {
+function Ensemble({ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }) {
   const filt = [['all', 'Everyone'], ['member', 'Core'], ['guest', 'Guests']]
   const showCore = rf === 'all' || rf === 'member'
   const showGuest = rf === 'all' || rf === 'guest'
@@ -332,6 +333,11 @@ function Ensemble({ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS
   </div> }
   return <div className="fade">
     <Header title="The Ensemble" sub={`${core.length} core voices${guests.length ? ` · ${guests.length} guest singers` : ''}`} action={{ label: 'Add Singer', on: () => sShS(true) }} />
+    {(dirs || []).map(d => <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '12px 16px', marginBottom: 14, background: '#0d1a30', borderRadius: 13, color: '#fff' }}>
+      <Avatar name={d.name} part={d.voice_part} type="director" size={42} />
+      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 15, fontWeight: 700 }}>{d.name}</div><div style={{ fontSize: 12, color: '#c9d2e2', marginTop: 1 }}>{d.email || d.phone || 'Music director'}</div></div>
+      <Pill bg="rgba(255,255,255,.18)" fg="#fff">Director · Manager</Pill>
+    </div>)}
     <Filter opts={filt} val={rf} set={sRf} />
     {showCore && <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 12px' }}><Sparkle size={16} color="#1c3564" /><span style={{ fontSize: 13, fontWeight: 800, color: '#1c3564' }}>Core Members</span></div>

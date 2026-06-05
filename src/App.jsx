@@ -190,7 +190,7 @@ export default function App() {
 }
 
 /* ---------- splash / error ---------- */
-const Splash = () => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}><style>{css}</style><Defs /><div className="mesh" /><div style={{ animation: 'pop .5s ease' }}><Logo size={64} /></div><div style={{ textAlign: 'center', zIndex: 1 }}><div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>The Masterpieces</div><div style={{ fontSize: 13, color: '#6e6e82', marginTop: 5 }}>Tuning up…</div></div></div>
+const Splash = () => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}><style>{css}</style><Defs /><div className="mesh" /><div style={{ animation: 'pop .5s ease' }}><Logo size={64} /></div><div style={{ textAlign: 'center', zIndex: 1 }}><div className="ui" style={{ fontSize: 9, fontWeight: 300, letterSpacing: '.4em', color: '#c9a23a' }}>THE</div><div className="serif" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#0d1a30' }}>Masterpieces</div><div style={{ width: 240, maxWidth: '70vw', margin: '14px auto 0' }}><MusicalPhrase variant="light" vh={40} /></div><div className="ui" style={{ fontSize: 12, color: '#6e6e82', marginTop: 10 }}>Tuning up…</div></div></div>
 const ErrorView = ({ err }) => <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><style>{css}</style><div className="card" style={{ textAlign: 'center', padding: 40, maxWidth: 380 }}><div style={{ fontSize: 17, fontWeight: 700, color: '#B91C1C' }}>Connection Error</div><div style={{ fontSize: 13, color: '#888', margin: '10px 0 18px' }}>{err}</div><button onClick={() => location.reload()} style={{ padding: '11px 24px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700 }}>Retry</button></div></div>
 
 /* ---------- musical phrase (brand motif) ---------- */
@@ -216,6 +216,10 @@ function MusicalPhrase({ variant = 'dark', vw = 600, vh = 48 }) {
     {MP_NOTES.map(([px, py, c, t], i) => <MPNote key={i} x={vw * px} y={vh * py} color={c} type={t} s={s} />)}
   </svg>
 }
+
+/* ---------- note dots (brand signature flourish) ---------- */
+const NOTE_COLORS = ['#d03a6a', '#e07830', '#e8b430', '#20a89a', '#3898d4', '#7b52c4', '#c035a0']
+const NoteDots = ({ size = 6, gap = 5, op = 0.9 }) => <div style={{ display: 'flex', gap, alignItems: 'center' }}>{NOTE_COLORS.map((c, i) => <span key={i} style={{ width: size, height: size, borderRadius: '50%', background: c, opacity: op }} />)}</div>
 
 /* ---------- mission hero (shows group photo when present at /ensemble.jpg) ---------- */
 const MISSION = <span><b style={{ color: '#e8b430' }}>A mixed vocal ensemble</b> — the energy of a jazz club with the polish of a concert hall. Jazz, swing &amp; pop standards from the 1930s to today, plus Christmas and patriotic favorites, tailored to every occasion.</span>
@@ -248,8 +252,9 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }
   ]
   return <div className="fade">
     <div style={{ marginBottom: 18 }}>
-      <h1 className="serif" style={{ fontSize: 30, fontWeight: 800 }}>{greet}, Beth 👋</h1>
-      <p style={{ color: '#6e6e82', fontSize: 14.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
+      <h1 className="serif" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: '#0d1a30' }}>{greet}, Beth</h1>
+      <p className="ui" style={{ color: '#6e6e82', fontSize: 13.5, marginTop: 4 }}>Here’s what’s happening with The Masterpieces today.</p>
+      <div style={{ marginTop: 10 }}><NoteDots /></div>
     </div>
     <MissionHero />
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
@@ -430,6 +435,9 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
   const statuses = [['all', 'All'], ['prospect', 'Prospect'], ['contacted', 'Contacted'], ['interested', 'Interested'], ['booked', 'Booked'], ['passed', 'Passed']]
   const stars = n => '★★★★★'.slice(0, Math.max(0, Math.min(5, n || 0)))
   const composeP = x => sEmail({ lead: { contact_name: x.organizer_name || '', organization: x.organization, email: x.email, status: x.status } })
+  const [dq, setDq] = useState({ email: false, contact: false, phone: false })
+  const dqDefs = [['email', 'Has email', '#20a89a'], ['contact', 'Has contact', '#e07830'], ['phone', 'Has phone', '#3898d4']]
+  const has = (x, k) => k === 'contact' ? !!(x.organizer_name || '').trim() : !!(x[k] || '').trim()
 
   if (sPro) {
     const x = P.find(p => p.id === sPro); if (!x) return null
@@ -463,7 +471,7 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
     </div>
   }
 
-  const fd = P.filter(x => (pf === 'all' || x.status === pf) && (ptf === 'all' || x.org_type === ptf) && (!pq || [x.organization, x.city, x.organizer_name, x.org_type].some(v => (v || '').toLowerCase().includes(pq.toLowerCase()))))
+  const fd = P.filter(x => (pf === 'all' || x.status === pf) && (ptf === 'all' || x.org_type === ptf) && (!pq || [x.organization, x.city, x.organizer_name, x.org_type].some(v => (v || '').toLowerCase().includes(pq.toLowerCase()))) && dqDefs.every(([k]) => !dq[k] || has(x, k)))
   const byType = PTYPES.map(t => [t, P.filter(x => x.org_type === t).length]).filter(([, n]) => n)
   const active = P.filter(x => x.status !== 'passed').length
 
@@ -476,6 +484,11 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       <Filter opts={statuses} val={pf} set={sPf} />
       <div style={{ flex: 1, minWidth: 200, position: 'relative', marginBottom: 18 }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#a8a3b5' }}><Search size={17} /></span><input value={pq} onChange={e => sPq(e.target.value)} placeholder="Search org, city, or contact…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e2d6bd', fontSize: 13.5, background: '#fff' }} /></div>
+    </div>
+    <div className="ui" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16, marginTop: -4 }}>
+      <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8a8598' }}>Only show</span>
+      {dqDefs.map(([k, label, c]) => { const on = dq[k]; const n = P.filter(x => has(x, k)).length; return <button key={k} onClick={() => setDq(d => ({ ...d, [k]: !d[k] }))} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 600, border: `1px solid ${on ? c : '#e2d6bd'}`, background: on ? c : '#fff', color: on ? '#fff' : '#4a4a5e' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: on ? '#fff' : c }} />{label}<span style={{ opacity: .7, fontWeight: 700 }}>{n}</span></button> })}
+      {(dq.email || dq.contact || dq.phone) && <button onClick={() => setDq({ email: false, contact: false, phone: false })} style={{ fontSize: 11, color: '#8a8598', fontWeight: 700 }}>clear</button>}
     </div>
     {ptf !== 'all' && <div style={{ marginBottom: 14, fontSize: 12.5 }}><Pill bg="#EDE9FE" fg="#1c3564">{ptf}</Pill> <button onClick={() => sPtf('all')} style={{ fontSize: 12, color: '#8a8598', fontWeight: 700 }}>clear type filter</button></div>}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 12 }}>{fd.map(x => { const ps = PS[x.status] || PS.prospect; return <div key={x.id} className="card lift" onClick={() => sSPro(x.id)} style={{ padding: 16, cursor: 'pointer' }}>
@@ -593,13 +606,16 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
 
 /* ---------- shared ui ---------- */
 const Header = ({ title, sub, action }) => <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, gap: 16, flexWrap: 'wrap' }}>
-  <div><h1 className="serif gtext" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' }}>{title}</h1><p className="ui" style={{ color: '#6e6e82', fontSize: 13.5, marginTop: 4 }}>{sub}</p></div>
+  <div><h1 className="serif gtext" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' }}>{title}</h1><p className="ui" style={{ color: '#6e6e82', fontSize: 13.5, marginTop: 4 }}>{sub}</p><div style={{ marginTop: 10 }}><NoteDots /></div></div>
   {action && <button onClick={action.on} className="ui" style={{ padding: '11px 20px', borderRadius: 8, background: '#0d1a30', color: '#e8b430', fontSize: 11.5, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 8px 20px rgba(13,26,48,.22)' }}>{action.icon || <Plus size={17} />}{action.label}</button>}
 </div>
 const Filter = ({ opts, val, set }) => <div style={{ display: 'inline-flex', gap: 3, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #efe6d4', marginBottom: 18, flexWrap: 'wrap' }}>{opts.map(([v, l]) => <button key={v} onClick={() => set(v)} style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: val === v ? G.purple : 'transparent', color: val === v ? '#fff' : '#6e6e82', transition: 'all .15s' }}>{l}</button>)}</div>
 const Btn = ({ children, grad, ghost, danger, small, ...p }) => { const isNavy = !ghost && (!grad || grad === G.purple); return <button {...p} className="ui" style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 8, fontSize: small ? 11 : 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, background: ghost ? '#fff' : (grad || G.purple), color: ghost ? (danger ? '#B91C1C' : '#4a4a5e') : (isNavy ? '#e8b430' : '#fff'), border: ghost ? `1px solid ${danger ? '#FECACA' : '#e2d6bd'}` : 'none', boxShadow: ghost ? 'none' : '0 6px 16px rgba(13,26,48,.18)' }}>{children}</button> }
 const BackBtn = ({ onClick }) => <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1c3564', fontSize: 13.5, fontWeight: 700, marginBottom: 18 }}><Arrow size={16} style={{ transform: 'rotate(180deg)' }} />Back</button>
-const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#8a8598', fontSize: 13.5, gridColumn: '1/-1' }}>{children}</div>
+const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#8a8598', fontSize: 13.5, gridColumn: '1/-1' }}>
+  <svg width="22" height="34" viewBox="0 0 38 62" style={{ display: 'block', margin: '0 auto 12px', opacity: .55 }}><path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke="#c9a23a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+  {children}
+</div>
 const Row = ({ ic, children }) => <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5 }}><span style={{ color: '#a8a3b5' }}>{ic}</span>{children}</div>
 const Stat = ({ ic, l, v }) => <div style={{ background: '#faf5e9', borderRadius: 12, padding: 14 }}><div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: '#8a8598', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '.05em', marginBottom: 6 }}>{ic}{l}</div><div style={{ fontSize: 14.5, fontWeight: 700 }}>{v}</div></div>
 function Modal({ children, onX, wide }) { return <div onClick={onX} style={{ position: 'fixed', inset: 0, background: 'rgba(30,20,55,.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500, padding: 20 }}><div onClick={e => e.stopPropagation()} className="card" style={{ width: wide ? 880 : 440, maxWidth: '100%', maxHeight: '92vh', overflow: 'auto', animation: 'pop .25s ease' }}>{children}</div></div> }

@@ -81,3 +81,14 @@ from (values
   ('Jim Tucker',   'Bass')
 ) as v(name, voice_part)
 where not exists (select 1 from public.roster);
+
+-- ── Availability-first booking flow (added later) ────────────────────────────
+-- Performance format + how many singers each booking/event needs, and the
+-- ability to track singer availability against an inquiry (the booking) before
+-- it becomes an event.
+alter table public.inquiries add column if not exists format text not null default 'Quartet';
+alter table public.inquiries add column if not exists singers_needed integer not null default 4;
+alter table public.events    add column if not exists format text not null default 'Quartet';
+alter table public.events    add column if not exists singers_needed integer not null default 4;
+alter table public.member_availability add column if not exists inquiry_id bigint;
+create index if not exists member_availability_inquiry_idx on public.member_availability (inquiry_id);

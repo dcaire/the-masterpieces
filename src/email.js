@@ -6,19 +6,12 @@
 const SIGNATURE_NAME = 'Beth';
 const SIGNATURE_ROLE = 'Manager, The Masterpieces';
 const SIGNATURE_TAG = 'A mixed vocal ensemble';
-// Brand logomark (hosted PNG — renders in all mail clients; SVG/local files do not).
+// Brand logomark + decorative musical-staff flourish (hosted PNGs — render in all
+// mail clients; SVG/local files do not).
 const LOGO_URL = 'https://the-masterpieces-app.netlify.app/logomark.png';
+const STAFF_URL = 'https://the-masterpieces-app.netlify.app/email-staff.png';
 // Optional: paste a public image URL (e.g. the group photo) to show it atop every email instead of the logo.
 const BAND_PHOTO_URL = '';
-
-const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-// "Additional notes" from the booking, shown (when present) in every template.
-const noteBlockHtml = (t) => t && t.trim()
-  ? `<div style="margin:6px 0 20px;padding:13px 16px;background:#faf5e9;border-left:3px solid #e8b430;border-radius:8px">
-      <div style="font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:#9ca3af;font-weight:700;margin-bottom:5px">Notes</div>
-      <div style="font-size:13.5px;line-height:1.6;color:#4b5563">${esc(t.trim()).replace(/\n/g, '<br>')}</div></div>`
-  : '';
-const noteLines = (t) => t && t.trim() ? ['', 'Notes:', t.trim()] : [];
 
 const fmtDate = (d) => {
   if (!d) return 'a date that works for you';
@@ -43,8 +36,9 @@ function shell(bodyHtml, accent = ['#0d1a30', '#1c3564']) {
       <div style="margin-top:8px;color:#e8b430;font-size:10px;letter-spacing:5px;text-transform:uppercase">The</div>
       <div style="margin-top:2px;color:#fdf8ee;font-size:24px;font-weight:700;letter-spacing:3px;text-transform:uppercase;font-family:Georgia,serif">Masterpieces</div>
       <div style="margin-top:6px;color:rgba(232,180,48,.85);font-size:11px;letter-spacing:2px;text-transform:uppercase">Vocal Ensemble</div>
+      <img src="${STAFF_URL}" alt="" width="300" style="display:block;width:300px;max-width:82%;height:auto;margin:16px auto 0" />
     </div>
-    <div style="padding:32px">${bodyHtml}<!--NOTES--></div>
+    <div style="padding:32px">${bodyHtml}</div>
     <div style="padding:22px 32px;background:#faf5e9;border-top:1px solid #efe6d4;text-align:center">
       <div style="font-size:15px;font-weight:700;color:#1a1a2e;font-family:Georgia,serif">${SIGNATURE_NAME}</div>
       <div style="font-size:12.5px;color:#1c3564;font-weight:600">${SIGNATURE_ROLE}</div>
@@ -138,9 +132,7 @@ export function buildEmail(type, lead) {
     html = shell(p(`Hi ${first(name)},`) + p(`Thank you so much for thinking of <strong>The Masterpieces</strong> for <strong>${evType}</strong> at <strong>${org}</strong>! We're a mixed vocal ensemble that brings the energy of a jazz club and the polish of a concert hall to events of every size.`) + p(`We sing jazz, swing, and pop from the 1930s right up to today, plus seasonal Christmas and patriotic favorites — and we'll happily tailor the program to your event.`) + p(lead.event_date ? `I see you're looking at <strong>${when}</strong> — I'd be glad to check our calendar and put together a few thoughts on a program.` : `Whenever you have a date in mind, I'd be glad to check our calendar and sketch out a program.`) + p(`Could you share a little about the occasion and how long you'd like us to sing?`) + button('Let’s find a date', accent), accent);
   }
 
-  const notes = (lead.notes || '').trim();
-  html = html.replace('<!--NOTES-->', noteBlockHtml(notes));
-  const text = `${[...lines, ...noteLines(notes)].join('\n')}\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}\n${SIGNATURE_TAG}`;
+  const text = `${lines.join('\n')}\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}\n${SIGNATURE_TAG}`;
   return { subject, text, html };
 }
 
@@ -148,11 +140,10 @@ export function buildEmail(type, lead) {
 export function buildAvailabilityEmail(ev) {
   const accent = ['#e8b430', '#e07830'];
   const when = fmtDate(ev.event_date);
-  const notes = (ev.notes || '').trim();
   const subject = `Are you in? — ${ev.title}`;
-  const text = `Hi everyone,\n\nWe have a possible booking and I need to know who's available:\n\n  ${ev.title}\n  ${when}${ev.event_time ? ' at ' + ev.event_time : ''}\n  ${ev.venue || ''}\n${noteLines(notes).join('\n')}\nPlease reply YES, NO, or MAYBE as soon as you can so I can confirm with the client.\n\nThank you!\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}`;
+  const text = `Hi everyone,\n\nWe have a possible booking and I need to know who's available:\n\n  ${ev.title}\n  ${when}${ev.event_time ? ' at ' + ev.event_time : ''}\n  ${ev.venue || ''}\n\nPlease reply YES, NO, or MAYBE as soon as you can so I can confirm with the client.\n\nThank you!\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}`;
   const rows = [['Event', ev.title], ['Date', when], ...(ev.event_time ? [['Time', ev.event_time]] : []), ...(ev.venue ? [['Venue', ev.venue]] : [])];
-  const html = shell(p(`Hi everyone,`) + p(`We have a possible booking and I need to know who's available:`) + detailCard(rows, accent) + noteBlockHtml(notes) + p(`Please reply <strong>YES</strong>, <strong>NO</strong>, or <strong>MAYBE</strong> as soon as you can so I can confirm with the client.`) + p(`Thank you! 🎶`), accent);
+  const html = shell(p(`Hi everyone,`) + p(`We have a possible booking and I need to know who's available:`) + detailCard(rows, accent) + p(`Please reply <strong>YES</strong>, <strong>NO</strong>, or <strong>MAYBE</strong> as soon as you can so I can confirm with the client.`) + p(`Thank you! 🎶`), accent);
   return { subject, text, html };
 }
 
@@ -172,15 +163,13 @@ export function buildProposalEmail(ev, songTitles = [], clientName = '') {
     ``,
     `We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`,
     `Looking forward to singing for you!`,
-    ...noteLines((ev.notes || '').trim()),
   ].join('\n');
   const htmlList = `<ol style="margin:0 0 18px;padding-left:22px">${list.map(t => `<li style="font-size:14px;line-height:1.8;color:#1a1a2e;font-weight:600">${t}</li>`).join('')}</ol>`;
   const html = shell(
     p(`Hi ${clientName ? first(clientName) : 'there'},`) +
     p(`Thank you again for having <strong>The Masterpieces</strong>! Here's the program we've put together for <strong>${ev.title}</strong>${ev.event_date ? ` on <strong>${when}</strong>` : ''}:`) +
     htmlList +
-    p(`We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`) +
-    noteBlockHtml((ev.notes || '').trim()),
+    p(`We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`),
     accent);
   return { subject, text, html };
 }

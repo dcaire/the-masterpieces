@@ -436,7 +436,7 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
   if (sInq) { const inq = I.find(i => i.id === sInq); if (!inq) return null; const isOD = inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date()
     const need = inq.singers_needed ?? 4; const ea = aMI[inq.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const covered = yc >= need; const isDJ = need === 0; const smaller = NEED_LABEL[Math.max(0, need - 1)]
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
-    const availObj = { title: `${inq.event_type || 'Performance'} · ${inq.organization || ''}`, event_date: inq.event_date, event_time: '', venue: inq.organization || '', notes: inq.notes }
+    const availObj = { title: `${inq.event_type || 'Performance'} · ${inq.organization || ''}`, event_date: inq.event_date, event_time: '', venue: inq.organization || '' }
     return <div className="fade">
       <BackBtn onClick={() => sSInq(null)} />
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

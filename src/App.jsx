@@ -662,6 +662,18 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
     } catch { noti('Copy unavailable — please select the text manually') }
   }
   const openMail = () => { window.location.href = mailto(recipients, subject, body); if (isFollowup && onLogged) onLogged(lead.id) }
+  const [sending, setSending] = useState(false)
+  const sendNow = async () => {
+    if (!recipients) { noti('Add a recipient first'); return }
+    setSending(true)
+    const { data, error } = await sb.functions.invoke('send-email', { body: { to: recipients, subject, html: built.html, text: body } })
+    setSending(false)
+    if (error) { let msg = 'Send failed — try again'; try { const j = await error.context.json(); if (j?.error) msg = j.error } catch { /* ignore */ } noti(msg); return }
+    if (data?.error) { noti(data.error); return }
+    noti(`Sent the branded email to ${data.sent} recipient${data.sent > 1 ? 's' : ''} 🎵`)
+    if (isFollowup && onLogged) onLogged(lead.id)
+    sEmail(null)
+  }
   const title = isAvail ? 'Availability Request' : isProposal ? 'Program Proposal' : 'Compose Follow-up'
   const sub = isAvail ? `To the ensemble · ${ev.title}` : isProposal ? `To the client · ${ev.title}` : `To ${lead.contact_name} · ${lead.organization}`
 
@@ -684,10 +696,11 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti }) {
         <iframe title="preview" srcDoc={built.html} style={{ width: '100%', height: 430, border: '1px solid #e2d6bd', borderRadius: 13, background: '#fff' }} />
       </div>
     </div>
-    <div style={{ padding: '16px 22px', borderTop: '1px solid #efe6d4', display: 'flex', gap: 9, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-      <Btn ghost onClick={() => copy(false)}><Copy size={15} />Copy Text</Btn>
+    <div style={{ padding: '16px 22px', borderTop: '1px solid #efe6d4', display: 'flex', gap: 9, justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
+      <span style={{ fontSize: 11, color: '#8a8598', marginRight: 'auto' }}>Send Now delivers the branded email directly · Open in Mail App sends plain text</span>
       <Btn ghost onClick={() => copy(true)}><Copy size={15} />Copy Formatted</Btn>
-      <Btn grad={accent} onClick={openMail}><Send size={15} />Open in Mail App</Btn>
+      <Btn ghost onClick={openMail}><Mail size={15} />Open in Mail App</Btn>
+      <Btn grad={accent} onClick={sendNow}><Send size={15} />{sending ? 'Sending…' : 'Send Now'}</Btn>
     </div>
   </Modal>
 }

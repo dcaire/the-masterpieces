@@ -139,6 +139,7 @@ export default function App() {
   const updP = async d => { const id = eP; const patch = { organization: d.org, org_type: d.type, city: d.city, organizer_name: d.organizer, organizer_role: d.role, email: d.email, phone: d.phone, website: d.website, fit_score: Number(d.fit) || 3, notes: d.notes }; const { error } = await sb.from('prospects').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEP(null); noti('Prospect updated') }
   const updPS = async (id, st) => { const t = new Date().toISOString().split('T')[0]; const patch = st === 'contacted' ? { status: st, last_contacted: t } : { status: st }; await sb.from('prospects').update(patch).eq('id', id); sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); noti(`Marked “${PS[st]?.l || st}”`) }
   const convP = async x => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: x.organizer_name || x.organization, organization: x.organization, phone: x.phone, email: x.email, event_type: 'Other', expected_donation: 0, notes: `From prospect (${x.org_type}${x.city ? ', ' + x.city : ''}).${x.notes ? ' ' + x.notes : ''}`, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); await sb.from('prospects').update({ status: 'interested' }).eq('id', x.id); sP(p => p.map(y => y.id === x.id ? { ...y, status: 'interested' } : y)); sSPro(null); sTab('bookings'); noti('Added to Bookings as a new lead') } }
+  const convE = async inq => { const title = `${inq.event_type || 'Performance'}${inq.organization ? ' · ' + inq.organization : ''}`; const { data: ins, error } = await sb.from('events').insert({ title, event_date: inq.event_date || null, event_time: '', venue: inq.organization || '', donation: inq.expected_donation || 0, status: 'confirmed', songs_planned: [] }).select().single(); if (error || !ins) { noti('Could not create event — try again'); return } sE(p => [...p, ins].sort((a, b) => new Date(a.event_date || '2999-12-31') - new Date(b.event_date || '2999-12-31'))); sSInq(null); sTab('events'); noti('Event created from booking') }
 
   if (ld) return <Splash />
   if (err) return <ErrorView err={err} />
@@ -171,7 +172,7 @@ export default function App() {
       {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav }} />}
       {tab === 'ensemble' && <Ensemble {...{ core, guests, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
-      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
       {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }} />}
     </main>
@@ -375,7 +376,7 @@ function Music({ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMu
 }
 
 /* ---------- bookings (leads) ---------- */
-function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq }) {
+function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE }) {
   const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
   const fd = I.filter(i => lf === 'all' || i.status === lf)
   const od = I.filter(i => i.status !== 'lost' && i.next_follow_up && new Date(i.next_follow_up + 'T12:00:00') < new Date())
@@ -409,6 +410,7 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
             <Btn ghost onClick={() => logFU(inq.id)}><Check size={16} />Log Follow-up</Btn>
             {inq.status === 'new' && <Btn ghost onClick={() => updIS(inq.id, 'contacted')}>Mark Contacted</Btn>}
             {inq.status === 'contacted' && <Btn grad={G.green} onClick={() => updIS(inq.id, 'confirmed')}><Check size={16} />Confirm</Btn>}
+            {inq.status === 'confirmed' && <Btn grad={G.green} onClick={() => convE(inq)}><Calendar size={16} />Add to Events</Btn>}
             {inq.status !== 'lost' && inq.status !== 'confirmed' && <Btn ghost danger onClick={() => updIS(inq.id, 'lost')}>Mark Lost</Btn>}
           </div>
         </div>
@@ -516,7 +518,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ background: ok ? G.green : pc ? G.amber : 'linear-gradient(135deg,#F87171,#EF4444)', padding: '24px 26px', color: '#fff' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div><h2 className="serif" style={{ fontSize: 24, fontWeight: 700 }}>{ev.title}</h2><div style={{ fontSize: 13.5, opacity: .92, marginTop: 4, display: 'flex', gap: 14, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Calendar size={14} />{fmtLong(ev.event_date)} · {ev.event_time}</span><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><MapPin size={14} />{ev.venue}</span></div></div>
+            <div><h2 className="serif" style={{ fontSize: 24, fontWeight: 700 }}>{ev.title}</h2><div style={{ fontSize: 13.5, opacity: .92, marginTop: 4, display: 'flex', gap: 14, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Calendar size={14} />{ev.event_date ? fmtLong(ev.event_date) : 'Date TBD'}{ev.event_time ? ` · ${ev.event_time}` : ''}</span>{ev.venue && <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><MapPin size={14} />{ev.venue}</span>}</div></div>
             <div style={{ textAlign: 'right' }}><div style={{ fontSize: 22, fontWeight: 800 }}>{$(ev.donation)}</div><div style={{ marginTop: 5 }}><Badge s={ev.status} /></div></div>
           </div>
           <div style={{ marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 11, padding: '11px 15px', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>{ok ? <><Check size={17} />{yc} confirmed — you have a full ensemble!</> : <><Bell size={17} />{yc} confirmed{pc ? `, ${pc} pending` : ''} — need at least 4.</>}</div>
@@ -538,14 +540,14 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail }) {
     <Header title="Events" sub="Confirm the ensemble’s availability before you commit to a date." />
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{E.map(ev => { const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pcn = Object.values(ea).filter(r => r === 'pending').length; const tot = aR.length || 1; const d = dU(ev.event_date); const ok = yc >= 4
     return <div key={ev.id} className="card lift" onClick={() => sSEv(ev.id)} style={{ padding: 19, cursor: 'pointer', display: 'flex', gap: 18, alignItems: 'center' }}>
-      <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1a1a2e' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div></div>
+      <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}>{ev.event_date ? <><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1a1a2e' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div></> : <div className="serif" style={{ fontSize: 15, fontWeight: 700, color: '#8a8598' }}>TBD</div>}</div>
       <div style={{ width: 1, alignSelf: 'stretch', background: '#efe6d4' }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}><span className="serif" style={{ fontSize: 18, fontWeight: 700 }}>{ev.title}</span><Badge s={ev.status} /></div>
-        <div style={{ fontSize: 12.5, color: '#8a8598', marginBottom: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} />{ev.event_time}</span><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{ev.venue}</span></div>
+        <div style={{ fontSize: 12.5, color: '#8a8598', marginBottom: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}>{ev.event_time && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} />{ev.event_time}</span>}{ev.venue && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{ev.venue}</span>}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><div style={{ flex: 1, maxWidth: 220, height: 7, borderRadius: 4, background: '#f0e8d6', overflow: 'hidden', display: 'flex' }}><div style={{ width: `${(yc / tot) * 100}%`, background: G.green }} /><div style={{ width: `${(pcn / tot) * 100}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)' }} /></div><span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#047857' : '#6b7280' }}>{yc}/{tot} yes</span>{ok && <Pill bg="#D1FAE5" fg="#047857">Ensemble ready</Pill>}</div>
       </div>
-      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#1c3564' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 ? '#EF4444' : '#8a8598' }}>{d > 0 ? `${d} days` : 'Past'}</div></div>
+      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#1c3564' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 && ev.event_date ? '#EF4444' : '#8a8598' }}>{!ev.event_date ? 'Set date' : d > 0 ? `${d} days` : 'Past'}</div></div>
     </div> })}{!E.length && <Empty>No events scheduled.</Empty>}</div>
   </div>
 }

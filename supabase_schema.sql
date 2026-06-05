@@ -69,7 +69,7 @@ begin
   end loop;
 end $$;
 
--- 4. Seed the core quartet (only if the roster is empty) ----------------------
+-- 4. Seed the core ensemble (only if the roster is empty) ---------------------
 -- Voice parts confirmed by Beth: Sherry Miller (Soprano), Donna White (Alto),
 -- Steve Miller (Tenor), Jim Tucker (Bass).
 insert into public.roster (name, voice_part, singer_type, active, joined_date)

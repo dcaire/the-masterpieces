@@ -31,7 +31,7 @@ export const Defs = () => (
 
 // Brand crest — "a framed masterpiece, sung in four voices."
 // A gilded gallery frame over a deep-plum tile, a treble clef, and the four
-// quartet voices (Soprano · Alto · Tenor · Bass) as a colored chord.
+// the four voices (Soprano · Alto · Tenor · Bass) as a colored chord.
 export const Logo = ({ size = 38 }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
     <rect width="48" height="48" rx="13" fill="url(#gPlum)" />

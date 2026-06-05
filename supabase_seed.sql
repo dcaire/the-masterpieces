@@ -1,4 +1,4 @@
--- The Masterpieces — seed the core quartet.
+-- The Masterpieces — seed the core ensemble.
 -- Run this in the Supabase SQL editor (https://supabase.com/dashboard → your project → SQL Editor).
 --
 -- Voice parts confirmed by Beth: Sherry Miller (Soprano), Donna White (Alto),

@@ -5,8 +5,7 @@
 
 const SIGNATURE_NAME = 'Beth';
 const SIGNATURE_ROLE = 'Manager, The Masterpieces';
-const SIGNATURE_TAG = 'A mixed quartet with piano accompaniment — representing Texas Master Chorale';
-const TAX_NOTE = 'Our performance fee is simply a tax-deductible donation to Texas Master Chorale.';
+const SIGNATURE_TAG = 'A mixed vocal ensemble';
 // Optional: paste a public image URL (e.g. the group photo) to show it atop every email.
 // Emails can't read local files, so this must be a hosted https:// URL.
 const BAND_PHOTO_URL = '';
@@ -29,7 +28,7 @@ function shell(bodyHtml, accent = ['#7C3AED', '#EC4899']) {
         ? `<img src="${BAND_PHOTO_URL}" alt="The Masterpieces" width="120" style="width:120px;height:120px;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.4)" />`
         : `<div style="display:inline-block;width:54px;height:54px;line-height:54px;border-radius:16px;background:rgba(255,255,255,.18);color:#fff;font-size:26px;font-weight:700;font-family:Georgia,serif">M</div>`}
       <div style="margin-top:14px;color:#fff;font-size:22px;font-weight:700;letter-spacing:.3px;font-family:Georgia,serif">The Masterpieces</div>
-      <div style="margin-top:4px;color:rgba(255,255,255,.85);font-size:12px;letter-spacing:1.5px;text-transform:uppercase">Mixed Quartet</div>
+      <div style="margin-top:4px;color:rgba(255,255,255,.85);font-size:12px;letter-spacing:1.5px;text-transform:uppercase">Vocal Ensemble</div>
     </div>
     <div style="padding:32px">${bodyHtml}</div>
     <div style="padding:22px 32px;background:#faf8ff;border-top:1px solid #eee;text-align:center">
@@ -51,7 +50,7 @@ function detailCard(rows, accent) {
 
 // ---- Templates -----------------------------------------------------------------
 export const TEMPLATES = {
-  intro: { label: 'Cold Intro', accent: ['#7C3AED', '#EC4899'], hint: 'Introduce the quartet to a new prospect' },
+  intro: { label: 'Cold Intro', accent: ['#7C3AED', '#EC4899'], hint: 'Introduce the ensemble to a new prospect' },
   outreach: { label: 'Initial Outreach', accent: ['#7C3AED', '#EC4899'], hint: 'Warm first reply to a new inquiry' },
   followup: { label: 'Gentle Follow-up', accent: ['#06B6D4', '#3B82F6'], hint: 'Friendly nudge if you haven’t heard back' },
   confirmation: { label: 'Booking Confirmation', accent: ['#10B981', '#06B6D4'], hint: 'Lock in the details once confirmed' },
@@ -85,42 +84,52 @@ export function buildEmail(type, lead) {
       ``,
       `  Event:    ${evType}`,
       `  Date:     ${when}`,
-      ...(donation ? [`  Donation: ${donation} (tax-deductible to Texas Master Chorale)`] : []),
+      ...(donation ? [`  Fee:      ${donation}`] : []),
       ``,
-      `Please let me know if anything looks off, or if there are particular pieces you'd love us to include — jazz, swing, pop, or something seasonal. We'll arrive early to set up the piano and warm up.`,
+      `Please let me know if anything looks off, or if there are particular pieces you'd love us to include — jazz, swing, pop, or something seasonal. We'll arrive early to warm up.`,
       `We can't wait to sing for you.`,
     ];
     const rows = [['Event', evType], ['Date', when]];
-    if (donation) rows.push(['Donation', `${donation} (tax-deductible)`]);
+    if (donation) rows.push(['Fee', donation]);
     if (lead.phone) rows.push(['Contact', lead.phone]);
-    html = shell(p(`Hi ${first(name)},`) + p(`Wonderful news — we're all set! <strong>The Masterpieces</strong> are confirmed to perform for <strong>${org}</strong>. Here's what we have on file:`) + detailCard(rows, accent) + p(`Please let me know if there are particular pieces you'd love us to include — jazz, swing, pop, or something seasonal. We'll arrive early to set up the piano and warm up.`) + p(`As a reminder, ${TAX_NOTE.charAt(0).toLowerCase() + TAX_NOTE.slice(1)}`) + p(`We can't wait to sing for you. 🎵`), accent);
+    html = shell(p(`Hi ${first(name)},`) + p(`Wonderful news — we're all set! <strong>The Masterpieces</strong> are confirmed to perform for <strong>${org}</strong>. Here's what we have on file:`) + detailCard(rows, accent) + p(`Please let me know if there are particular pieces you'd love us to include — jazz, swing, pop, or something seasonal. We'll arrive early to warm up.`) + p(`We can't wait to sing for you. 🎵`), accent);
   } else if (type === 'thanks') {
     subject = `Thank you from The Masterpieces`;
     lines = [
       `Hi ${first(name)},`,
-      `On behalf of the whole quartet — thank you for having The Masterpieces at ${org}. It was a joy to share music with you and your guests.`,
+      `On behalf of the whole ensemble — thank you for having The Masterpieces at ${org}. It was a joy to share music with you and your guests.`,
       `If photos or recordings are floating around, we'd love to see them. And if you ever need us again, we're only a note away.`,
       `With gratitude and song,`,
     ];
-    html = shell(p(`Hi ${first(name)},`) + p(`On behalf of the whole quartet — <strong>thank you</strong> for having The Masterpieces at <strong>${org}</strong>. It was a joy to share music with you and your guests.`) + p(`If photos or recordings are floating around, we'd love to see them. And if you ever need us again, we're only a note away.`) + p(`With gratitude and song. 🎼`), accent);
+    html = shell(p(`Hi ${first(name)},`) + p(`On behalf of the whole ensemble — <strong>thank you</strong> for having The Masterpieces at <strong>${org}</strong>. It was a joy to share music with you and your guests.`) + p(`If photos or recordings are floating around, we'd love to see them. And if you ever need us again, we're only a note away.`) + p(`With gratitude and song. 🎼`), accent);
+  } else if (type === 'intro') {
+    subject = `Live music for ${org} — The Masterpieces`;
+    lines = [
+      `Hi ${first(name)},`,
+      `I'm Beth with The Masterpieces, a mixed vocal ensemble here in the Houston area. We bring the energy of a jazz club and the polish of a concert hall to luncheons, club meetings, services, galas, and celebrations.`,
+      `We sing jazz, swing, and pop standards from the 1930s to today, plus Christmas and patriotic favorites — and we tailor every program to the occasion.`,
+      `I'd love to share how we could create a memorable afternoon for ${org}. Could I send over a short sample set list, or find a few minutes to chat?`,
+      `Warmly,`,
+    ];
+    html = shell(p(`Hi ${first(name)},`) + p(`I'm Beth with <strong>The Masterpieces</strong>, a mixed vocal ensemble here in the Houston area. We bring the energy of a jazz club and the polish of a concert hall to luncheons, club meetings, services, galas, and celebrations.`) + p(`We sing jazz, swing, and pop standards from the 1930s to today, plus Christmas and patriotic favorites — and we tailor every program to the occasion.`) + p(`I'd love to share how we could create a memorable afternoon for <strong>${org}</strong>. Could I send over a short sample set list, or find a few minutes to chat?`) + button('Hear what we do', accent), accent);
   } else { // outreach
     subject = `The Masterpieces — thank you for reaching out!`;
     lines = [
       `Hi ${first(name)},`,
-      `Thank you so much for thinking of The Masterpieces for ${evType === 'your event' ? 'your event' : evType} at ${org}! We're a mixed quartet with piano accompaniment, representing Texas Master Chorale for events where a full chorus isn't feasible.`,
+      `Thank you so much for thinking of The Masterpieces for ${evType === 'your event' ? 'your event' : evType} at ${org}! We're a mixed vocal ensemble that brings the energy of a jazz club and the polish of a concert hall to events of every size.`,
       `We sing jazz, swing, and pop from the 1930s right up to today, plus seasonal Christmas and patriotic favorites — and we'll happily tailor the program to your event.`,
       ...(lead.event_date ? [`I see you're looking at ${when} — I'd be glad to check our calendar and put together a few thoughts on a program.`] : [`Whenever you have a date in mind, I'd be glad to check our calendar and sketch out a program.`]),
-      `Could you share a little about the occasion and how long you'd like us to sing? ${TAX_NOTE}`,
+      `Could you share a little about the occasion and how long you'd like us to sing?`,
       `Looking forward to it!`,
     ];
-    html = shell(p(`Hi ${first(name)},`) + p(`Thank you so much for thinking of <strong>The Masterpieces</strong> for <strong>${evType}</strong> at <strong>${org}</strong>! We're a mixed quartet with piano accompaniment, representing <strong>Texas Master Chorale</strong> for events where a full chorus isn't feasible.`) + p(`We sing jazz, swing, and pop from the 1930s right up to today, plus seasonal Christmas and patriotic favorites — and we'll happily tailor the program to your event.`) + p(lead.event_date ? `I see you're looking at <strong>${when}</strong> — I'd be glad to check our calendar and put together a few thoughts on a program.` : `Whenever you have a date in mind, I'd be glad to check our calendar and sketch out a program.`) + p(`Could you share a little about the occasion and how long you'd like us to sing? ${TAX_NOTE}`) + button('Let’s find a date', accent), accent);
+    html = shell(p(`Hi ${first(name)},`) + p(`Thank you so much for thinking of <strong>The Masterpieces</strong> for <strong>${evType}</strong> at <strong>${org}</strong>! We're a mixed vocal ensemble that brings the energy of a jazz club and the polish of a concert hall to events of every size.`) + p(`We sing jazz, swing, and pop from the 1930s right up to today, plus seasonal Christmas and patriotic favorites — and we'll happily tailor the program to your event.`) + p(lead.event_date ? `I see you're looking at <strong>${when}</strong> — I'd be glad to check our calendar and put together a few thoughts on a program.` : `Whenever you have a date in mind, I'd be glad to check our calendar and sketch out a program.`) + p(`Could you share a little about the occasion and how long you'd like us to sing?`) + button('Let’s find a date', accent), accent);
   }
 
   const text = `${lines.join('\n')}\n\n${SIGNATURE_NAME}\n${SIGNATURE_ROLE}\n${SIGNATURE_TAG}`;
   return { subject, text, html };
 }
 
-// Availability request sent to the quartet's singers for a specific event.
+// Availability request sent to the ensemble's singers for a specific event.
 export function buildAvailabilityEmail(ev) {
   const accent = ['#F59E0B', '#FB7185'];
   const when = fmtDate(ev.event_date);
@@ -146,7 +155,6 @@ export function buildProposalEmail(ev, songTitles = [], clientName = '') {
     textList,
     ``,
     `We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`,
-    `${TAX_NOTE}`,
     `Looking forward to singing for you!`,
   ].join('\n');
   const htmlList = `<ol style="margin:0 0 18px;padding-left:22px">${list.map(t => `<li style="font-size:14px;line-height:1.8;color:#1f2937;font-weight:600">${t}</li>`).join('')}</ol>`;
@@ -154,8 +162,7 @@ export function buildProposalEmail(ev, songTitles = [], clientName = '') {
     p(`Hi ${clientName ? first(clientName) : 'there'},`) +
     p(`Thank you again for having <strong>The Masterpieces</strong>! Here's the program we've put together for <strong>${ev.title}</strong>${ev.event_date ? ` on <strong>${when}</strong>` : ''}:`) +
     htmlList +
-    p(`We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`) +
-    p(`As always, ${TAX_NOTE.charAt(0).toLowerCase() + TAX_NOTE.slice(1)}`),
+    p(`We're happy to add, swap, or re-order anything — just let us know if there's a favorite you'd love to hear. Our set blends jazz, swing, and pop with seasonal pieces as the occasion calls for it.`),
     accent);
   return { subject, text, html };
 }

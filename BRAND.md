@@ -2,13 +2,11 @@
 
 ## Identity
 
-**The Masterpieces** are a mixed vocal quartet with piano accompaniment representing Texas Master Chorale (TMC), a 100-voice auditioned choir founded in 1986 in Tomball, Texas. Members of TMC have performed at venues worldwide including the Sistine Chapel. The Masterpieces bring that caliber of artistry to intimate settings — galas, luncheons, private parties, senior communities, churches, and corporate events.
+**The Masterpieces** are a mixed vocal ensemble bringing world-class artistry to intimate settings — galas, luncheons, private parties, senior communities, churches, and corporate events.
 
 **Members:** Sherry Miller (Soprano), Donna White (Alto), Steve Miller (Tenor), Jim Tucker (Bass)
 **Manager:** Beth Tucker, 281-804-4360
-**Website:** texasmasterchorale.org
 **Repertoire:** Jazz standards, swing, American Songbook, pop classics, Christmas, patriotic. Programs tailored per event.
-**Fees:** Tax-deductible donation to Texas Master Chorale, a 501(c)(3) nonprofit.
 
 -----
 

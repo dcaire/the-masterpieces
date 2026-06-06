@@ -1,9 +1,12 @@
 // Sends a fully-formatted (HTML) email from The Masterpieces' Gmail account
-// via SMTP. Requires two secrets to be set on the Supabase project:
-//   GMAIL_USER          e.g. themasterpieces@gmail.com
+// via SMTP. The sender address is baked in below; only the App Password must be
+// set as a Supabase secret:
 //   GMAIL_APP_PASSWORD  a Google "App Password" (Account → Security → App passwords)
+// (GMAIL_USER can optionally override the default sender address.)
 // Invoked from the app with: sb.functions.invoke('send-email', { body: { to, subject, html, text } })
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+
+const DEFAULT_SENDER = "themasterpiecesinfo@gmail.com";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -27,19 +30,19 @@ Deno.serve(async (req: Request) => {
 
   const { to, subject, html, text, replyTo, ping } = body || {};
 
-  const user = Deno.env.get("GMAIL_USER");
+  const user = Deno.env.get("GMAIL_USER") || DEFAULT_SENDER;
   const pass = Deno.env.get("GMAIL_APP_PASSWORD");
 
-  // Health check: report whether credentials are configured (no email sent).
-  if (ping) return json({ ok: true, configured: !!(user && pass), from: user || null });
+  // Health check: report whether the App Password is configured (no email sent).
+  if (ping) return json({ ok: true, configured: !!pass, from: user });
 
   const recipients = Array.isArray(to)
     ? to
     : String(to || "").split(",").map((s) => s.trim()).filter(Boolean);
   if (!recipients.length) return json({ error: "No recipients" }, 400);
 
-  if (!user || !pass) {
-    return json({ error: "Email is not configured yet (missing GMAIL_USER / GMAIL_APP_PASSWORD)." }, 503);
+  if (!pass) {
+    return json({ error: "Email is not configured yet (missing GMAIL_APP_PASSWORD)." }, 503);
   }
 
   try {

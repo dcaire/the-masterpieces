@@ -60,6 +60,11 @@ export default function MemberPortal({ token }) {
               <div style={{ display: 'flex', gap: 7 }}>{['yes', 'pending', 'no'].map(r => { const on = ev.myResponse === r; const c = RESP[r]; return <button key={r} onClick={() => rsvp(ev.id, r)} disabled={saving === ev.id + r} style={{ flex: 1, padding: '10px 6px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', border: 'none', background: on ? c.fg : '#fff', color: on ? '#fff' : '#9ca3af', boxShadow: on ? 'none' : 'inset 0 0 0 1px #e2d6bd' }}>{c.l}</button> })}</div>
             </div>
 
+            {ev.lineup && ev.lineup.length > 0 && <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: '#8a8598', marginBottom: 9 }}>Singing with you</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{ev.lineup.map((p, i) => { const c = VP[p.voice_part] || VP.Soprano; return <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999, background: p.me ? '#0d1a30' : '#faf5e9', color: p.me ? '#fff' : '#1a1a2e', fontSize: 12, fontWeight: 600 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: c.fg }} />{p.me ? 'You' : p.name.split(' ')[0]}<span style={{ color: p.me ? '#9aa4b8' : '#8a8598', fontSize: 10.5 }}>{p.voice_part}{p.response === 'pending' ? ' · TBD' : ''}</span></span> })}</div>
+            </div>}
+
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: '#8a8598', marginBottom: 9 }}>Music — {ev.songs.length} {ev.songs.length === 1 ? 'piece' : 'pieces'}</div>
               {ev.songs.length === 0 && <div style={{ fontSize: 13, color: '#8a8598' }}>The program hasn’t been set yet — check back soon.</div>}
@@ -73,7 +78,17 @@ export default function MemberPortal({ token }) {
             </div>
           </div>)}
 
-          <div style={{ textAlign: 'center', color: '#a8a3b5', fontSize: 12, marginTop: 26 }}>Questions? Just reply to Beth’s email.</div>
+          {state.director
+            ? <div style={{ background: '#fff', border: '1px solid #efe6d4', borderRadius: 14, padding: '16px 18px', marginTop: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: '#8a8598' }}>Questions about a performance?</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}>{state.director.name}</div>
+              <div style={{ fontSize: 11.5, color: '#a8a3b5', marginBottom: 10 }}>Music Director</div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                {state.director.email && <a href={`mailto:${state.director.email}`} style={{ flex: '1 1 120px', maxWidth: 200, background: '#1c3564', color: '#e8b430', padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>✉ Email</a>}
+                {state.director.phone && <a href={`tel:${state.director.phone}`} style={{ flex: '1 1 120px', maxWidth: 200, background: '#fff', color: '#1c3564', border: '1px solid #e2d6bd', padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>☎ Call</a>}
+              </div>
+            </div>
+            : <div style={{ textAlign: 'center', color: '#a8a3b5', fontSize: 12, marginTop: 26 }}>Questions? Just reply to the director’s email.</div>}
         </>}
     </div>
   </div>

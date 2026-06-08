@@ -209,7 +209,7 @@ export default function App() {
     {shS && <FModal t="Add a Singer" sub="Add a core member or guest singer" onX={() => sShS(false)} onOk={addS} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: 'member' }]} />}
     {shG && <FModal t="Invite a Guest Singer" sub="Bring in a sub to fill out the lineup" onX={() => sShG(false)} onOk={addG} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'email', l: 'Email (so you can invite them)', rq: 1 }, { k: 'phone', l: 'Phone' }]} />}
     {eSng != null && (() => { const s = R.find(r => r.id === eSng); return s ? <FModal t="Edit Singer" sub={`Update ${s.name}’s details`} onX={() => sESng(null)} onOk={updS} fs={[{ k: 'name', l: 'Full name', rq: 1, df: s.name }, { k: 'phone', l: 'Phone', df: s.phone || '' }, { k: 'email', l: 'Email', df: s.email || '' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: s.voice_part }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: s.singer_type }]} /> : null })()}
-    {shI && <FModal t="New Booking Inquiry" sub="Log a new performance request" onX={() => sShI(false)} onOk={addI} fs={[{ k: 'contact', l: 'Contact name', rq: 1 }, { k: 'org', l: 'Organization', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'eventDate', l: 'Event date', ty: 'date' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: 'Luncheon' }, { k: 'format', l: 'Performance format (sets singers needed)', ty: 'sel', opts: FORMATS, df: 'Quartet' }, { k: 'expectedDonation', l: 'Expected fee ($)', ty: 'num', df: 0 }, { k: 'notes', l: 'Notes', ty: 'area' }]} />}
+    {shI && <BookingWizard onX={() => sShI(false)} onOk={addI} />}
     {shM && <FModal t="Upload Arrangement" sub="Add sheet music to the cloud library" onX={() => sShM(false)} onOk={addM} fs={[{ k: 'title', l: 'Title', rq: 1 }, { k: 'arranger', l: 'Arranger / Composer' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: 'Jazz' }, { k: 'pages', l: 'Pages', ty: 'num', df: 4 }, { k: 'size', l: 'File size (MB)', ty: 'num', df: 2 }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: 'Sync to iPads' }]} />}
     {eMus != null && (() => { const s = M.find(x => x.id === eMus); return s ? <FModal t="Edit Arrangement" sub={`Update “${s.title}”`} onX={() => sEMus(null)} onOk={updM} fs={[{ k: 'title', l: 'Title', rq: 1, df: s.title }, { k: 'arranger', l: 'Arranger / Composer', df: s.arranger || '' }, { k: 'category', l: 'Category', ty: 'sel', opts: ['Jazz', 'Swing', 'Pop', 'Standards', 'Christmas', 'Patriotic', 'Other'], df: s.category }, { k: 'pages', l: 'Pages', ty: 'num', df: s.pages }, { k: 'size', l: 'File size (MB)', ty: 'num', df: s.file_size_mb }, { k: 'dest', l: 'Destination', ty: 'tog', opts: ['Sync to iPads', 'Cloud only'], df: s.cloud_only ? 'Cloud only' : 'Sync to iPads' }]} /> : null })()}
     {eInq != null && (() => { const inq = I.find(x => x.id === eInq); return inq ? <FModal t="Edit Booking Inquiry" sub={`Update ${inq.contact_name}’s inquiry`} onX={() => sEInq(null)} onOk={updI} fs={[{ k: 'contact', l: 'Contact name', rq: 1, df: inq.contact_name }, { k: 'org', l: 'Organization', rq: 1, df: inq.organization || '' }, { k: 'phone', l: 'Phone', df: inq.phone || '' }, { k: 'email', l: 'Email', df: inq.email || '' }, { k: 'eventDate', l: 'Event date', ty: 'date', df: inq.event_date || '' }, { k: 'eventType', l: 'Occasion', ty: 'sel', opts: ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other'], df: inq.event_type }, { k: 'format', l: 'Performance format (sets singers needed)', ty: 'sel', opts: FORMATS, df: inq.format || 'Quartet' }, { k: 'expectedDonation', l: 'Expected fee ($)', ty: 'num', df: inq.expected_donation }, { k: 'notes', l: 'Notes', ty: 'area', df: inq.notes || '' }]} /> : null })()}
@@ -810,6 +810,72 @@ function FModal({ t, sub, onX, fs, onOk }) {
       <div style={{ display: 'flex', gap: 9, marginTop: 22, justifyContent: 'flex-end' }}>
         <Btn ghost onClick={onX}>Cancel</Btn>
         <button onClick={() => ok && onOk(fm)} style={{ padding: '10px 22px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700, opacity: ok ? 1 : .4, boxShadow: '0 6px 16px rgba(13,26,48,.22)' }}>Save</button>
+      </div>
+    </div>
+  </Modal>
+}
+
+// Guided, step-by-step creation of a new booking inquiry.
+const OCCASIONS = ['Luncheon', 'Sunday Service', 'Club Meeting', 'Holiday Celebration', 'Annual Gala', 'Concert', 'Wedding', 'Memorial', 'Other']
+function BookingWizard({ onX, onOk }) {
+  const [step, setStep] = useState(0)
+  const [d, setD] = useState({ contact: '', org: '', phone: '', email: '', eventDate: '', eventType: 'Luncheon', format: 'Quartet', expectedDonation: 0, notes: '' })
+  const set = (k, v) => setD(p => ({ ...p, [k]: v }))
+  const steps = [
+    { t: 'Who’s asking?', sub: 'The client and how to reach them.' },
+    { t: 'What’s the event?', sub: 'When it is and what kind of occasion.' },
+    { t: 'What will you send?', sub: 'The format sets how many singers you’ll need.' },
+    { t: 'Anything else?', sub: 'Add any notes, then create the booking.' },
+  ]
+  const last = step === steps.length - 1
+  const canNext = step === 0 ? !!(d.contact.trim() && d.org.trim()) : true
+  const st = { width: '100%', padding: '11px 13px', borderRadius: 11, border: '1px solid #e2d6bd', fontSize: 13.5, background: '#fff', boxSizing: 'border-box' }
+  const Lbl = ({ children, req }) => <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.4px', color: '#8a8598', textTransform: 'uppercase', margin: '14px 0 6px' }}>{children}{req && <span style={{ color: '#d03a6a' }}> *</span>}</div>
+  const need = fmtNeed(d.format)
+  return <Modal onX={onX}>
+    <div style={{ background: G.purple, padding: '20px 26px', color: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <h2 className="serif" style={{ fontSize: 20, fontWeight: 700 }}>New Booking · {steps[step].t}</h2>
+        <span style={{ fontSize: 12, color: '#e8b430', fontWeight: 700 }}>Step {step + 1} of {steps.length}</span>
+      </div>
+      <div style={{ fontSize: 12.5, opacity: .9, marginTop: 2 }}>{steps[step].sub}</div>
+      <div style={{ height: 6, background: 'rgba(255,255,255,.15)', borderRadius: 4, marginTop: 12 }}><div style={{ height: '100%', width: `${(step + 1) / steps.length * 100}%`, background: '#e8b430', borderRadius: 4, transition: 'width .3s' }} /></div>
+    </div>
+    <div style={{ padding: '8px 26px 26px', minHeight: 230 }}>
+      {step === 0 && <>
+        <Lbl req>Contact name</Lbl><input autoFocus style={st} value={d.contact} onChange={e => set('contact', e.target.value)} placeholder="e.g. Ms. Carter" />
+        <Lbl req>Organization</Lbl><input style={st} value={d.org} onChange={e => set('org', e.target.value)} placeholder="e.g. Houston Heights Woman’s Club" />
+        <Lbl>Phone</Lbl><input style={st} value={d.phone} onChange={e => set('phone', e.target.value)} placeholder="optional" />
+        <Lbl>Email</Lbl><input style={st} value={d.email} onChange={e => set('email', e.target.value)} placeholder="optional — needed to email them later" />
+      </>}
+      {step === 1 && <>
+        <Lbl>Event date</Lbl><input type="date" style={st} value={d.eventDate} onChange={e => set('eventDate', e.target.value)} />
+        <Lbl>Occasion</Lbl><select style={st} value={d.eventType} onChange={e => set('eventType', e.target.value)}>{OCCASIONS.map(o => <option key={o}>{o}</option>)}</select>
+      </>}
+      {step === 2 && <>
+        <Lbl>Performance format</Lbl>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>{FORMATS.map(f => { const on = d.format === f; const n = fmtNeed(f); return <button key={f} onClick={() => set('format', f)} style={{ textAlign: 'left', padding: '11px 13px', borderRadius: 11, border: on ? '2px solid #1c3564' : '1px solid #e2d6bd', background: on ? '#eef2fb' : '#fff' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1a1a2e' }}>{f}</div>
+          <div style={{ fontSize: 11.5, color: '#8a8598' }}>{n === 0 ? 'no singers (DJ set)' : `needs ${n} singer${n > 1 ? 's' : ''}`}</div>
+        </button> })}</div>
+        <Lbl>Expected fee ($)</Lbl><input type="number" style={st} value={d.expectedDonation} onChange={e => set('expectedDonation', parseFloat(e.target.value) || 0)} />
+      </>}
+      {step === 3 && <>
+        <Lbl>Notes</Lbl><textarea style={{ ...st, minHeight: 80, resize: 'vertical' }} value={d.notes} onChange={e => set('notes', e.target.value)} placeholder="Special requests, logistics, repertoire ideas…" />
+        <div style={{ marginTop: 16, background: '#faf5e9', border: '1px solid #efe6d4', borderRadius: 12, padding: '13px 15px', fontSize: 12.5, color: '#4b5563', lineHeight: 1.7 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.5px', color: '#8a8598', textTransform: 'uppercase', marginBottom: 4 }}>Review</div>
+          <b style={{ color: '#1a1a2e' }}>{d.contact || '—'}</b>{d.org ? ` · ${d.org}` : ''}<br />
+          {d.eventType}{d.eventDate ? ` · ${fmt(d.eventDate)}` : ' · date TBD'} · <b style={{ color: '#1a1a2e' }}>{d.format}</b>{need ? ` (needs ${need})` : ''}{d.expectedDonation ? ` · ${$(d.expectedDonation)}` : ''}
+        </div>
+      </>}
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '14px 26px', borderTop: '1px solid #efe6d4' }}>
+      {step > 0 ? <Btn ghost onClick={() => setStep(step - 1)}><Arrow size={15} style={{ transform: 'rotate(180deg)' }} />Back</Btn> : <Btn ghost onClick={onX}>Cancel</Btn>}
+      {!canNext && <span style={{ fontSize: 11.5, color: '#B45309' }}>Add a contact name &amp; organization</span>}
+      <div style={{ marginLeft: 'auto' }}>
+        {last
+          ? <Btn grad={G.green} onClick={() => onOk(d)}><Check size={15} />Create Booking</Btn>
+          : <button onClick={() => canNext && setStep(step + 1)} style={{ padding: '10px 22px', borderRadius: 11, background: G.purple, color: '#fff', fontSize: 13, fontWeight: 700, opacity: canNext ? 1 : .4, boxShadow: '0 6px 16px rgba(13,26,48,.22)', display: 'flex', alignItems: 'center', gap: 7 }}>Next<Arrow size={15} /></button>}
       </div>
     </div>
   </Modal>

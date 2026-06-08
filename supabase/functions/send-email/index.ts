@@ -1,10 +1,7 @@
 // Sends a fully-formatted (HTML) email via the Resend API.
-// Only ONE secret is required on the Supabase project:
-//   RESEND_API_KEY   (from resend.com — Settings → API Keys)
-// Optional overrides:
-//   RESEND_FROM      the From header, e.g. "The Masterpieces <info@yourdomain.com>"
-//                    (defaults to Resend's shared sender until a domain is verified)
-//   REPLY_TO         where replies go (defaults to the group's Gmail)
+// The Resend API key is read from the RESEND_API_KEY env secret if present,
+// otherwise from the private app_config table (server-only, RLS-locked).
+// Optional overrides (env): RESEND_FROM, REPLY_TO.
 // Invoked from the app with: sb.functions.invoke('send-email', { body: { to, subject, html, text } })
 
 const DEFAULT_FROM = "The Masterpieces <onboarding@resend.dev>";
@@ -23,10 +20,29 @@ function json(obj: unknown, status = 200) {
   });
 }
 
-// Pull the bare email address out of a "Name <addr>" string for display.
 function addrOf(s: string) {
   const m = s.match(/<([^>]+)>/);
   return m ? m[1] : s;
+}
+
+// Resend key: prefer an env secret, fall back to the app_config table (read with
+// the service role, which bypasses RLS).
+async function getResendKey(): Promise<string | null> {
+  const envKey = Deno.env.get("RESEND_API_KEY");
+  if (envKey) return envKey;
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !svc) return null;
+    const r = await fetch(`${url}/rest/v1/app_config?key=eq.RESEND_API_KEY&select=value`, {
+      headers: { apikey: svc, Authorization: `Bearer ${svc}` },
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows?.[0]?.value || null;
+  } catch {
+    return null;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -38,7 +54,7 @@ Deno.serve(async (req: Request) => {
 
   const { to, subject, html, text, replyTo, ping } = body || {};
 
-  const apiKey = Deno.env.get("RESEND_API_KEY");
+  const apiKey = await getResendKey();
   const from = Deno.env.get("RESEND_FROM") || DEFAULT_FROM;
   const replyAddr = replyTo || Deno.env.get("REPLY_TO") || DEFAULT_REPLY_TO;
 
@@ -51,7 +67,7 @@ Deno.serve(async (req: Request) => {
   if (!recipients.length) return json({ error: "No recipients" }, 400);
 
   if (!apiKey) {
-    return json({ error: "Email is not configured yet (missing RESEND_API_KEY)." }, 503);
+    return json({ error: "Email is not configured yet (no Resend API key)." }, 503);
   }
 
   try {

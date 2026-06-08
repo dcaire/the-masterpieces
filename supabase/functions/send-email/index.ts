@@ -4,7 +4,7 @@
 // Optional overrides (env): RESEND_FROM, REPLY_TO.
 // Invoked from the app with: sb.functions.invoke('send-email', { body: { to, subject, html, text } })
 
-const DEFAULT_FROM = "The Masterpieces <onboarding@resend.dev>";
+const DEFAULT_FROM = "The Masterpieces <info@themasterpieces.org>";
 const DEFAULT_REPLY_TO = "themasterpiecesinfo@gmail.com";
 
 const cors = {

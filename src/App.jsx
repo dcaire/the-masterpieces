@@ -438,13 +438,29 @@ function LineupList({ aR, ea, onTog, onSet }) {
 /* ---------- bookings (leads) ---------- */
 function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG, togSel }) {
   const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
-  const fd = I.filter(i => lf === 'all' || i.status === lf)
+  const fd = I.filter(i => lf === 'all' || i.status === lf).slice().sort((a, b) => {
+    const la = a.status === 'lost' ? 1 : 0, lb = b.status === 'lost' ? 1 : 0
+    if (la !== lb) return la - lb
+    const da = a.event_date ? new Date(a.event_date + 'T12:00:00').getTime() : Infinity
+    const db = b.event_date ? new Date(b.event_date + 'T12:00:00').getTime() : Infinity
+    return da - db
+  })
   const od = I.filter(i => i.status !== 'lost' && i.next_follow_up && new Date(i.next_follow_up + 'T12:00:00') < new Date())
 
   if (sInq) { const inq = I.find(i => i.id === sInq); if (!inq) return null; const isOD = inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date()
     const need = inq.singers_needed ?? 4; const ea = aMI[inq.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const covered = yc >= need; const isDJ = need === 0; const smaller = NEED_LABEL[Math.max(0, need - 1)]
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
     const availObj = { title: `${inq.event_type || 'Performance'} · ${inq.organization || ''}`, event_date: inq.event_date, event_time: '', venue: inq.organization || '' }
+    const scrollTo = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const steps = [
+      { key: 'details', label: 'Details', done: !!inq.event_date, hint: 'Add the event date so you can plan around it.', actionLabel: 'Edit details', onAction: () => sEInq(inq.id) },
+      ...(isDJ ? [] : [
+        { key: 'lineup', label: 'Lineup', done: sel.length > 0, hint: 'Pick the singers who fit this event.', actionLabel: 'Choose singers', onAction: () => scrollTo('avail-panel') },
+        { key: 'avail', label: 'Availability', done: covered, hint: sel.length > 0 ? 'Email your singers, then mark their replies until you’re covered.' : 'Add singers first, then email them to check availability.', actionLabel: sel.length > 0 ? 'Email availability' : null, onAction: () => sEmail({ availability: availObj, recipients: recips }) },
+      ]),
+      { key: 'confirm', label: 'Confirm', done: inq.status === 'confirmed', hint: covered || isDJ ? 'Lock it in with the client.' : 'You can confirm now, or get more singers first.', actionLabel: 'Confirm with client', onAction: () => updIS(inq.id, 'confirmed') },
+      { key: 'event', label: 'Event', done: false, hint: 'Add it to Events, then build the song program.', actionLabel: 'Add to Events', onAction: () => convE(inq) },
+    ]
     return <div className="fade">
       <BackBtn onClick={() => sSInq(null)} />
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -460,7 +476,8 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
             <Stat ic={<Phone size={16} />} l="Phone" v={inq.phone || '—'} />
           </div>
           {inq.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf5e9', padding: 15, borderRadius: 12, marginBottom: 20 }}>{inq.notes}</div>}
-          {!isDJ && <div style={{ border: `1px solid ${covered ? '#A7E8C6' : '#efe6d4'}`, background: covered ? '#eafaf1' : '#fff', borderRadius: 13, padding: 16, marginBottom: 20 }}>
+          {inq.status !== 'lost' && <NextStepCard steps={steps} />}
+          {!isDJ && <div id="avail-panel" style={{ border: `1px solid ${covered ? '#A7E8C6' : '#efe6d4'}`, background: covered ? '#eafaf1' : '#fff', borderRadius: 13, padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
               <SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle>
               <div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: availObj, recipients: recips })}><Send size={14} />Email Availability</Btn>}</div>
@@ -497,10 +514,19 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
     <Header title="Bookings" sub="Track every inquiry from first hello to confirmed performance." action={{ label: 'New Inquiry', on: () => sShI(true) }} />
     {od.length > 0 && <div style={{ background: G.amber, color: '#fff', borderRadius: 14, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 11, boxShadow: '0 8px 22px rgba(13,26,48,.18)' }}><Bell size={20} /><div style={{ fontSize: 13.5 }}><b>{od.length} overdue follow-up{od.length > 1 ? 's' : ''}:</b> {od.map(i => i.contact_name).join(', ')}</div></div>}
     <Filter opts={sts} val={lf} set={sLf} />
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{fd.map(inq => { const isOD = inq.status !== 'lost' && inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date(); return <div key={inq.id} className="card lift" onClick={() => sSInq(inq.id)} style={{ padding: 17, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: isOD ? '4px solid #FB7185' : '4px solid transparent' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{fd.map(inq => { const isOD = inq.status !== 'lost' && inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date()
+      const fmtL = inq.format || 'Quartet'; const need = inq.singers_needed ?? 4; const ea = aMI[inq.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const picked = Object.keys(ea).length
+      let lp = null
+      if (inq.status !== 'lost') {
+        if (need === 0) lp = ['#CCFBF1', '#0f766e', 'DJ — no singers']
+        else if (yc >= need) lp = ['#D1FAE5', '#047857', `${fmtL} ✓`]
+        else if (picked === 0) lp = ['#f0e8d6', '#8a7a52', `${fmtL} · lineup TBD`]
+        else lp = ['#FEF3C7', '#B45309', `${fmtL} · ${yc}/${need}`]
+      }
+      return <div key={inq.id} className="card lift" onClick={() => sSInq(inq.id)} style={{ padding: 17, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: isOD ? '4px solid #FB7185' : '4px solid transparent' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <IconChip grad={inq.status === 'confirmed' ? G.green : inq.status === 'lost' ? 'linear-gradient(135deg,#cbd5e1,#94a3b8)' : G.purple} size={44}><Mail size={19} /></IconChip>
-        <div><div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}><span style={{ fontSize: 15, fontWeight: 700 }}>{inq.contact_name}</span><Badge s={inq.status} />{isOD && <Pill bg="#FEE2E2" fg="#B91C1C">Overdue</Pill>}</div><div style={{ fontSize: 12.5, color: '#8a8598' }}>{inq.organization} · {inq.event_type}</div></div>
+        <div><div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}><span style={{ fontSize: 15, fontWeight: 700 }}>{inq.contact_name}</span><Badge s={inq.status} />{isOD && <Pill bg="#FEE2E2" fg="#B91C1C">Overdue</Pill>}{lp && <Pill bg={lp[0]} fg={lp[1]}>{lp[2]}</Pill>}</div><div style={{ fontSize: 12.5, color: '#8a8598' }}>{inq.organization} · {inq.event_type}</div></div>
       </div>
       <div style={{ textAlign: 'right' }}><div style={{ fontSize: 16, fontWeight: 800, color: '#1c3564' }}>{$(inq.expected_donation)}</div><div style={{ fontSize: 11.5, color: '#8a8598' }}>{inq.event_date ? fmt(inq.event_date) : 'TBD'}</div></div>
     </div> })}{!fd.length && <Empty>No bookings in this view.</Empty>}</div>
@@ -589,6 +615,13 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel }) {
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
+    const progN = (ev.songs_planned || []).length
+    const scrollTo = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const evSteps = [
+      ...(need > 0 ? [{ key: 'lineup', label: 'Lineup', done: ok, hint: ok ? 'Lineup confirmed for the date.' : 'Confirm enough singers for the date.', actionLabel: 'Manage availability', onAction: () => scrollTo('ev-avail') }] : []),
+      { key: 'program', label: 'Program', done: progN > 0, hint: 'Choose the songs for this performance.', actionLabel: 'Pick songs', onAction: () => sShProg(ev.id) },
+      { key: 'proposal', label: 'Proposal', done: false, hint: 'Send the song program to the client.', actionLabel: progN > 0 ? 'Send proposal' : null, onAction: () => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) }) },
+    ]
     return <div className="fade">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><BackBtn onClick={() => sSEv(null)} /><Btn ghost small onClick={() => sEEv(ev.id)}><Pencil size={14} />Edit Event</Btn></div>
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -600,7 +633,8 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
           <div style={{ marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 11, padding: '11px 15px', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>{need === 0 ? <><Check size={17} />DJ engagement — no singers required.</> : ok ? <><Check size={17} />{yc} confirmed — full {ev.format || 'lineup'}!</> : <><Bell size={17} />{yc} confirmed{pc ? `, ${pc} pending` : ''} — need {need}.</>}</div>
         </div>
         <div style={{ padding: 26 }}>
-          {need > 0 && <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: ev, recipients: recips })}><Send size={14} />Email Request</Btn>}</div></div>
+          <NextStepCard steps={evSteps} />
+          {need > 0 && <><div id="ev-avail" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: ev, recipients: recips })}><Send size={14} />Email Request</Btn>}</div></div>
           <div style={{ marginBottom: 22 }}><LineupList aR={aR} ea={ea} onTog={rid => togSel('event', ev.id, rid)} onSet={(rid, r) => updR(ev.id, rid, r)} /></div></>}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShProg(ev.id)}><Plus size={14} />Edit Program</Btn>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf5e9', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f0e8d6' : '#D1FAE5'} fg={s.cloud_only ? '#6e6e82' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
@@ -725,6 +759,29 @@ const Filter = ({ opts, val, set }) => <div style={{ display: 'inline-flex', gap
 const Btn = ({ children, grad, ghost, danger, small, ...p }) => { const isNavy = !ghost && (!grad || grad === G.purple); return <button {...p} className="ui" style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 8, fontSize: small ? 11 : 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, background: ghost ? '#fff' : (grad || G.purple), color: ghost ? (danger ? '#B91C1C' : '#4a4a5e') : (isNavy ? '#e8b430' : '#fff'), border: ghost ? `1px solid ${danger ? '#FECACA' : '#e2d6bd'}` : 'none', boxShadow: ghost ? 'none' : '0 6px 16px rgba(13,26,48,.18)' }}>{children}</button> }
 const BackBtn = ({ onClick }) => <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1c3564', fontSize: 13.5, fontWeight: 700, marginBottom: 18 }}><Arrow size={16} style={{ transform: 'rotate(180deg)' }} />Back</button>
 const EmailStatus = ({ cfg, from }) => { const map = { checking: ['#f0e8d6', '#6e6e82', 'Checking email…'], on: ['#D1FAE5', '#047857', `Email connected${from ? ' · ' + from : ''}`], off: ['#FEF3C7', '#B45309', 'Email not configured'], error: ['#FEE2E2', '#B91C1C', 'Email check failed'] }; const [bg, fg, label] = map[cfg] || map.checking; return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', borderRadius: 999, background: bg, color: fg, fontSize: 11.5, fontWeight: 700 }}><Mail size={13} />{label}</span> }
+// Guided "what's next" coach. `steps` = [{ key, label, done, hint, actionLabel?, onAction? }]
+function NextStepCard({ steps }) {
+  const nextIdx = steps.findIndex(s => !s.done)
+  const cur = nextIdx === -1 ? null : steps[nextIdx]
+  const doneN = steps.filter(s => s.done).length
+  return <div style={{ background: '#0d1a30', borderRadius: 14, padding: '15px 18px', marginBottom: 20, color: '#fff', boxShadow: '0 10px 28px rgba(13,26,48,.22)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <Sparkle size={15} color="#e8b430" />
+      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: '#e8b430' }}>{cur ? 'Next step' : 'All set 🎉'}</span>
+      <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9aa4b8', fontWeight: 700 }}>{doneN}/{steps.length} done</span>
+    </div>
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: cur ? 13 : 0 }}>
+      {steps.map((s, i) => { const isCur = i === nextIdx; return <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 999, background: s.done ? 'rgba(32,168,154,.22)' : isCur ? '#e8b430' : 'rgba(255,255,255,.07)', color: s.done ? '#7ee0cf' : isCur ? '#0d1a30' : '#9aa4b8' }}>
+        <span style={{ width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 800, background: s.done ? '#20a89a' : isCur ? '#0d1a30' : 'rgba(255,255,255,.14)', color: '#fff' }}>{s.done ? '✓' : i + 1}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 700 }}>{s.label}</span>
+      </div> })}
+    </div>
+    {cur && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 13.5, color: '#dbe2ef' }}>{cur.hint}</span>
+      {cur.actionLabel && <Btn small grad={G.amber} onClick={cur.onAction}>{cur.actionLabel}</Btn>}
+    </div>}
+  </div>
+}
 const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#8a8598', fontSize: 13.5, gridColumn: '1/-1' }}>
   <svg width="22" height="34" viewBox="0 0 38 62" style={{ display: 'block', margin: '0 auto 12px', opacity: .55 }}><path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke="#c9a23a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
   {children}

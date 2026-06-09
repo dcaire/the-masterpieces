@@ -252,7 +252,7 @@ function MusicalPhrase({ variant = 'dark', vw = 600, vh = 48 }) {
   const gap = vh / 6, s = 0.82 * (vh / 50)
   return <svg viewBox={`0 0 ${vw} ${vh}`} preserveAspectRatio="xMidYMid meet" style={{ width: '100%', height: 'auto', display: 'block' }}>
     {[1, 2, 3, 4, 5].map(i => <line key={i} x1="0" y1={gap * i} x2={vw} y2={gap * i} stroke={line} strokeWidth="0.6" opacity={lineOp} />)}
-    <g transform={`translate(4 1) scale(${vh / 85})`}><path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke={clef} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></g>
+    <text x={vh * 0.06} y={vh * 0.97} fontSize={vh * 1.2} fontFamily="'Noto Music','Bravura','Apple Symbols','Segoe UI Symbol',serif" fill={clef}>{'𝄞'}</text>
     {MP_NOTES.map(([px, py, c, t], i) => <MPNote key={i} x={vw * px} y={vh * py} color={c} type={t} s={s} />)}
   </svg>
 }
@@ -910,7 +910,7 @@ function NextStepCard({ steps }) {
   </div>
 }
 const Empty = ({ children }) => <div className="card" style={{ padding: 32, textAlign: 'center', color: '#8a8598', fontSize: 13.5, gridColumn: '1/-1' }}>
-  <svg width="22" height="34" viewBox="0 0 38 62" style={{ display: 'block', margin: '0 auto 12px', opacity: .55 }}><path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke="#c9a23a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+  <svg width="22" height="34" viewBox="0 0 38 62" style={{ display: 'block', margin: '0 auto 12px', opacity: .55 }}><text x="19" y="52" fontSize="60" textAnchor="middle" fontFamily="'Noto Music','Bravura','Apple Symbols','Segoe UI Symbol',serif" fill="#c9a23a">𝄞</text></svg>
   {children}
 </div>
 const Row = ({ ic, children }) => <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5 }}><span style={{ color: '#a8a3b5' }}>{ic}</span>{children}</div>

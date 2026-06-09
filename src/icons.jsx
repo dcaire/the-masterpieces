@@ -66,6 +66,7 @@ export const Check = (p) => <I {...p}><path d="m20 6-11 11-5-5" /></I>;
 export const Clock = (p) => <I {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></I>;
 export const Plus = (p) => <I {...p}><path d="M12 5v14M5 12h14" /></I>;
 export const Trash = (p) => <I {...p}><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" /></I>;
+export const Archive = (p) => <I {...p}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" /><path d="M10 12h4" /></I>;
 export const Copy = (p) => <I {...p}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></I>;
 export const Send = (p) => <I {...p}><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" /></I>;
 export const Bell = (p) => <I {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9" /><path d="M10.5 21a1.8 1.8 0 0 0 3 0" /></I>;

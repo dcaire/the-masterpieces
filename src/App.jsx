@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { sb } from './sb'
 import { buildEmail, buildAvailabilityEmail, buildProposalEmail, mailto, TEMPLATES } from './email'
-import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Trash, Copy, Send, Bell, MapPin, Arrow, Search, Dollar, Pencil, Target, Globe } from './icons'
+import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Trash, Archive, Copy, Send, Bell, MapPin, Arrow, Search, Dollar, Pencil, Target, Globe } from './icons'
 
 /* ---------- helpers ---------- */
 const fmt = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return d || '' } }
@@ -182,7 +182,7 @@ export default function App() {
   if (ld) return <Splash />
   if (err) return <ErrorView err={err} />
 
-  const tabs = [['dashboard', 'Dashboard', Sparkle], ['ensemble', 'Ensemble', Users], ['bookings', 'Bookings', Mail], ['events', 'Events', Calendar], ['music', 'Music', Note], ['prospects', 'Prospects', Target]]
+  const tabs = [['dashboard', 'Dashboard', Sparkle], ['ensemble', 'Ensemble', Users], ['bookings', 'Bookings', Mail], ['events', 'Events', Calendar], ['music', 'Music', Note], ['prospects', 'Prospects', Target], ['archive', 'Archive', Archive]]
 
   return <div style={{ position: 'relative', zIndex: 1 }}>
     <style>{css}</style><Defs /><div className="mesh" />
@@ -208,7 +208,8 @@ export default function App() {
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
       {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel, delI, U }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail, startDrip, stopDrip, sendReminder }} />}
-      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }} />}
+      {tab === 'events' && <Events {...{ mode: 'events', E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }} />}
+      {tab === 'archive' && <Events {...{ mode: 'archive', E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }} />}
     </main>
 
     {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng, noti, delS }} />}
@@ -714,8 +715,9 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 }
 
 /* ---------- events ---------- */
-function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }) {
-  const [evf, setEvf] = useState('all')
+function Events({ mode = 'events', E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }) {
+  const [aq, setAq] = useState('')
+  const isArchive = mode === 'archive'
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
     const away = new Set((U || []).filter(u => ev.event_date && u.date === ev.event_date).map(u => u.roster_id)); const awayNames = aR.filter(m => away.has(m.id)).map(m => m.name.split(' ')[0])
@@ -740,6 +742,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
           {(ev.contact_name || ev.notes) && <div style={{ display: 'grid', gap: 9, marginBottom: 20, background: '#faf5e9', borderRadius: 13, padding: 16 }}>
             {ev.contact_name && <Row ic={<Phone size={16} />}>{ev.contact_name}</Row>}
             {ev.notes && <Row ic={<Sparkle size={16} />}>{ev.notes}</Row>}
+            {(ev.event_date && ev.event_date < ymd(new Date())) && ev.contact_name && <div><Btn small grad={G.amber} onClick={() => sEmail({ lead: { contact_name: ev.contact_name, organization: ev.title, email: '', status: 'booked' }, template: 'reminder' })}><Send size={14} />Email client — re-book</Btn></div>}
           </div>}
           {!(ev.event_date && ev.event_date < ymd(new Date())) && <NextStepCard steps={evSteps} />}
           {need > 0 && <><div id="ev-avail" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: ev, recipients: recips })}><Send size={14} />Email Request</Btn>}</div></div>
@@ -753,17 +756,21 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
   }
 
   const tkey = ymd(new Date()); const yr = String(new Date().getFullYear())
-  const totalRev = E.reduce((s, e) => s + Number(e.donation || 0), 0)
-  const yearRev = E.filter(e => (e.event_date || '').slice(0, 4) === yr).reduce((s, e) => s + Number(e.donation || 0), 0)
-  const upN = E.filter(e => e.event_date && e.event_date >= tkey).length
-  const fE = E.filter(e => evf === 'all' ? true : evf === 'upcoming' ? (e.event_date && e.event_date >= tkey) : (!e.event_date || e.event_date < tkey))
-    .sort((a, b) => { const da = a.event_date || '', db = b.event_date || ''; return evf === 'upcoming' ? (da < db ? -1 : 1) : (da > db ? -1 : 1) })
+  const isPastEv = e => e.event_date && e.event_date < tkey
+  const pastList = E.filter(isPastEv)
+  const totalRev = pastList.reduce((s, e) => s + Number(e.donation || 0), 0)
+  const yearRev = pastList.filter(e => (e.event_date || '').slice(0, 4) === yr).reduce((s, e) => s + Number(e.donation || 0), 0)
+  const fE = isArchive
+    ? pastList.filter(e => !aq || [e.title, e.contact_name, e.notes, e.venue].some(v => (v || '').toLowerCase().includes(aq.toLowerCase()))).sort((a, b) => a.event_date < b.event_date ? 1 : -1)
+    : E.filter(e => !e.event_date || e.event_date >= tkey).sort((a, b) => (a.event_date || '9999') < (b.event_date || '9999') ? -1 : 1)
   return <div className="fade">
-    <Header title="Events" sub="Performances, revenue, and lineups." action={{ label: 'Add Event', on: () => sShEv(true) }} />
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
-      {[['All-time revenue', $(totalRev)], [`${yr} revenue`, $(yearRev)], ['Performances', E.length]].map(([l, v], i) => <div key={i} className="card" style={{ padding: '14px 16px' }}><div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', color: '#8a8598' }}>{l}</div><div style={{ fontSize: 22, fontWeight: 800, color: '#2a2a2a', marginTop: 4 }}>{v}</div></div>)}
-    </div>
-    <Filter opts={[['upcoming', `Upcoming${upN ? ` · ${upN}` : ''}`], ['past', 'Past'], ['all', `All · ${E.length}`]]} val={evf} set={setEvf} />
+    <Header title={isArchive ? 'Archive' : 'Events'} sub={isArchive ? 'Every past performance — full history, kept for re-engagement.' : 'Upcoming performances — lineups, programs, and details.'} action={isArchive ? undefined : { label: 'Add Event', on: () => sShEv(true) }} />
+    {isArchive && <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
+        {[['All-time revenue', $(totalRev)], [`${yr} revenue`, $(yearRev)], ['Past performances', pastList.length]].map(([l, v], i) => <div key={i} className="card" style={{ padding: '14px 16px' }}><div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', color: '#8a8598' }}>{l}</div><div style={{ fontSize: 22, fontWeight: 800, color: '#2a2a2a', marginTop: 4 }}>{v}</div></div>)}
+      </div>
+      <div style={{ position: 'relative', marginBottom: 16 }}><span style={{ position: 'absolute', left: 13, top: 11, color: '#a8a3b5' }}><Search size={17} /></span><input value={aq} onChange={e => setAq(e.target.value)} placeholder="Search past events by name, contact, or notes…" style={{ width: '100%', padding: '11px 12px 11px 38px', borderRadius: 12, border: '1px solid #e2d6bd', fontSize: 13.5, background: '#fff' }} /></div>
+    </>}
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{fE.map(ev => { const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pcn = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const tot = need || aR.length || 1; const d = dU(ev.event_date); const ok = yc >= need; const isPast = ev.event_date && ev.event_date < tkey
     return <div key={ev.id} className="card lift" onClick={() => sSEv(ev.id)} style={{ padding: 19, cursor: 'pointer', display: 'flex', gap: 18, alignItems: 'center' }}>
       <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}>{ev.event_date ? <><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1a1a2e' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div><div style={{ fontSize: 10, color: '#a8a3b5', fontWeight: 700 }}>{new Date(ev.event_date + 'T12:00:00').getFullYear()}</div></> : <div className="serif" style={{ fontSize: 15, fontWeight: 700, color: '#8a8598' }}>TBD</div>}</div>
@@ -775,7 +782,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
         {isPast && ev.notes && <div style={{ fontSize: 12, color: '#a8a3b5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.notes}</div>}
       </div>
       <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: Number(ev.donation) > 0 ? '#2a2a2a' : '#cfc8d8' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 && ev.event_date ? '#EF4444' : '#8a8598' }}>{!ev.event_date ? 'Set date' : d > 0 ? `${d} days` : 'Past'}</div></div>
-    </div> })}{!fE.length && <Empty>No {evf === 'upcoming' ? 'upcoming ' : evf === 'past' ? 'past ' : ''}events.</Empty>}</div>
+    </div> })}{!fE.length && <Empty>{isArchive ? (aq ? 'No archived events match your search.' : 'No past events yet.') : 'No upcoming events — add one or confirm a booking.'}</Empty>}</div>
   </div>
 }
 

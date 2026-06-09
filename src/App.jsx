@@ -703,6 +703,7 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 
 /* ---------- events ---------- */
 function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }) {
+  const [evf, setEvf] = useState('upcoming')
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
     const away = new Set((U || []).filter(u => ev.event_date && u.date === ev.event_date).map(u => u.roster_id)); const awayNames = aR.filter(m => away.has(m.id)).map(m => m.name.split(' ')[0])
@@ -724,7 +725,11 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
           <div style={{ marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 11, padding: '11px 15px', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>{need === 0 ? <><Check size={17} />DJ engagement — no singers required.</> : ok ? <><Check size={17} />{yc} confirmed — full {ev.format || 'lineup'}!</> : <><Bell size={17} />{yc} confirmed{pc ? `, ${pc} pending` : ''} — need {need}.</>}</div>
         </div>
         <div style={{ padding: 26 }}>
-          <NextStepCard steps={evSteps} />
+          {(ev.contact_name || ev.notes) && <div style={{ display: 'grid', gap: 9, marginBottom: 20, background: '#faf5e9', borderRadius: 13, padding: 16 }}>
+            {ev.contact_name && <Row ic={<Phone size={16} />}>{ev.contact_name}</Row>}
+            {ev.notes && <Row ic={<Sparkle size={16} />}>{ev.notes}</Row>}
+          </div>}
+          {!(ev.event_date && ev.event_date < ymd(new Date())) && <NextStepCard steps={evSteps} />}
           {need > 0 && <><div id="ev-avail" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: ev, recipients: recips })}><Send size={14} />Email Request</Btn>}</div></div>
           {awayNames.length > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FEE2E2', color: '#B91C1C', borderRadius: 10, padding: '9px 13px', marginBottom: 12, fontSize: 12.5, fontWeight: 700 }}><Bell size={15} />Unavailable on {fmt(ev.event_date)}: {awayNames.join(', ')}</div>}
           <div style={{ marginBottom: 22 }}><LineupList aR={aR} ea={ea} away={away} onTog={rid => togSel('event', ev.id, rid)} onSet={(rid, r) => updR(ev.id, rid, r)} /></div></>}
@@ -735,19 +740,30 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
     </div>
   }
 
+  const tkey = ymd(new Date()); const yr = String(new Date().getFullYear())
+  const totalRev = E.reduce((s, e) => s + Number(e.donation || 0), 0)
+  const yearRev = E.filter(e => (e.event_date || '').slice(0, 4) === yr).reduce((s, e) => s + Number(e.donation || 0), 0)
+  const upN = E.filter(e => e.event_date && e.event_date >= tkey).length
+  const fE = E.filter(e => evf === 'all' ? true : evf === 'upcoming' ? (e.event_date && e.event_date >= tkey) : (!e.event_date || e.event_date < tkey))
+    .sort((a, b) => { const da = a.event_date || '', db = b.event_date || ''; return evf === 'upcoming' ? (da < db ? -1 : 1) : (da > db ? -1 : 1) })
   return <div className="fade">
-    <Header title="Events" sub="Your confirmed performances — finalize the lineup, program, and details." action={{ label: 'Add Event', on: () => sShEv(true) }} />
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{E.map(ev => { const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pcn = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const tot = need || aR.length || 1; const d = dU(ev.event_date); const ok = yc >= need
+    <Header title="Events" sub="Performances, revenue, and lineups." action={{ label: 'Add Event', on: () => sShEv(true) }} />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
+      {[['All-time revenue', $(totalRev)], [`${yr} revenue`, $(yearRev)], ['Performances', E.length]].map(([l, v], i) => <div key={i} className="card" style={{ padding: '14px 16px' }}><div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', color: '#8a8598' }}>{l}</div><div style={{ fontSize: 22, fontWeight: 800, color: '#1c3564', marginTop: 4 }}>{v}</div></div>)}
+    </div>
+    <Filter opts={[['upcoming', `Upcoming${upN ? ` · ${upN}` : ''}`], ['past', 'Past'], ['all', `All · ${E.length}`]]} val={evf} set={setEvf} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{fE.map(ev => { const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pcn = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const tot = need || aR.length || 1; const d = dU(ev.event_date); const ok = yc >= need; const isPast = ev.event_date && ev.event_date < tkey
     return <div key={ev.id} className="card lift" onClick={() => sSEv(ev.id)} style={{ padding: 19, cursor: 'pointer', display: 'flex', gap: 18, alignItems: 'center' }}>
-      <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}>{ev.event_date ? <><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1a1a2e' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div></> : <div className="serif" style={{ fontSize: 15, fontWeight: 700, color: '#8a8598' }}>TBD</div>}</div>
+      <div style={{ textAlign: 'center', width: 58, flexShrink: 0 }}>{ev.event_date ? <><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase' }}>{new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' })}</div><div className="serif" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: '#1a1a2e' }}>{new Date(ev.event_date + 'T12:00:00').getDate()}</div><div style={{ fontSize: 10, color: '#a8a3b5', fontWeight: 700 }}>{new Date(ev.event_date + 'T12:00:00').getFullYear()}</div></> : <div className="serif" style={{ fontSize: 15, fontWeight: 700, color: '#8a8598' }}>TBD</div>}</div>
       <div style={{ width: 1, alignSelf: 'stretch', background: '#efe6d4' }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}><span className="serif" style={{ fontSize: 18, fontWeight: 700 }}>{ev.title}</span><Badge s={ev.status} /></div>
-        <div style={{ fontSize: 12.5, color: '#8a8598', marginBottom: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}>{ev.event_time && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} />{ev.event_time}</span>}{ev.venue && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{ev.venue}</span>}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><div style={{ flex: 1, maxWidth: 220, height: 7, borderRadius: 4, background: '#f0e8d6', overflow: 'hidden', display: 'flex' }}><div style={{ width: `${(yc / tot) * 100}%`, background: G.green }} /><div style={{ width: `${(pcn / tot) * 100}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)' }} /></div><span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#047857' : '#6b7280' }}>{need === 0 ? 'DJ' : `${yc}/${need} yes`}</span>{(ok || need === 0) && <Pill bg="#D1FAE5" fg="#047857">{need === 0 ? 'DJ set' : `${ev.format || 'Lineup'} ready`}</Pill>}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}><span className="serif" style={{ fontSize: 18, fontWeight: 700 }}>{ev.title}</span>{!isPast && <Badge s={ev.status} />}</div>
+        <div style={{ fontSize: 12.5, color: '#8a8598', marginBottom: isPast ? 0 : 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}>{ev.event_time && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} />{ev.event_time}</span>}{ev.venue && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{ev.venue}</span>}{ev.contact_name && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Phone size={13} />{ev.contact_name}</span>}</div>
+        {!isPast && <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}><div style={{ flex: 1, maxWidth: 220, height: 7, borderRadius: 4, background: '#f0e8d6', overflow: 'hidden', display: 'flex' }}><div style={{ width: `${(yc / tot) * 100}%`, background: G.green }} /><div style={{ width: `${(pcn / tot) * 100}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)' }} /></div><span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#047857' : '#6b7280' }}>{need === 0 ? 'DJ' : `${yc}/${need} yes`}</span>{(ok || need === 0) && <Pill bg="#D1FAE5" fg="#047857">{need === 0 ? 'DJ set' : `${ev.format || 'Lineup'} ready`}</Pill>}</div>}
+        {isPast && ev.notes && <div style={{ fontSize: 12, color: '#a8a3b5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.notes}</div>}
       </div>
-      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#1c3564' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 && ev.event_date ? '#EF4444' : '#8a8598' }}>{!ev.event_date ? 'Set date' : d > 0 ? `${d} days` : 'Past'}</div></div>
-    </div> })}{!E.length && <Empty>No events scheduled.</Empty>}</div>
+      <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: Number(ev.donation) > 0 ? '#1c3564' : '#cfc8d8' }}>{$(ev.donation)}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: d <= 7 && d > 0 && ev.event_date ? '#EF4444' : '#8a8598' }}>{!ev.event_date ? 'Set date' : d > 0 ? `${d} days` : 'Past'}</div></div>
+    </div> })}{!fE.length && <Empty>No {evf === 'upcoming' ? 'upcoming ' : evf === 'past' ? 'past ' : ''}events.</Empty>}</div>
   </div>
 }
 

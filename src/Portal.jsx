@@ -41,13 +41,13 @@ export default function MemberPortal({ token }) {
   if (state.loading) return <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: '#8a8598' }}>Loading your portal…</div></div>
 
   return <div style={wrap}>
-    <div style={{ background: '#0d1a30', padding: '26px 16px 30px', textAlign: 'center', color: '#fff' }}>
+    <div style={{ background: '#1a1a1a', padding: '26px 16px 30px', textAlign: 'center', color: '#fff' }}>
       <img src="/logomark.png" alt="" width="58" height="58" style={{ borderRadius: 15 }} />
-      <div style={{ marginTop: 8, color: '#e8b430', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase' }}>The</div>
+      <div style={{ marginTop: 8, color: '#c8102e', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase' }}>The</div>
       <div className="serif" style={{ fontSize: 22, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'Georgia,serif' }}>Masterpieces</div>
       {state.member && <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,.1)', padding: '7px 16px', borderRadius: 999 }}>
         <span style={{ fontSize: 14, fontWeight: 700 }}>{state.member.name}</span>
-        {state.member.voice_part && <span style={{ fontSize: 11.5, fontWeight: 700, color: '#0d1a30', background: (VP[state.member.voice_part] || VP.Soprano).fg, padding: '2px 9px', borderRadius: 999 }}>{state.member.voice_part}</span>}
+        {state.member.voice_part && <span style={{ fontSize: 11.5, fontWeight: 700, color: '#1a1a1a', background: (VP[state.member.voice_part] || VP.Soprano).fg, padding: '2px 9px', borderRadius: 999 }}>{state.member.voice_part}</span>}
       </div>}
     </div>
 
@@ -59,7 +59,7 @@ export default function MemberPortal({ token }) {
           {(!state.events || state.events.length === 0) && <div style={{ textAlign: 'center', color: '#8a8598', background: '#fff', border: '1px solid #efe6d4', borderRadius: 14, padding: 30, fontSize: 14 }}>You’re not on any upcoming events yet. When Beth adds you to one, it’ll show up here.</div>}
 
           {(state.events || []).map(ev => <div key={ev.id} style={{ background: '#fff', border: '1px solid #efe6d4', borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: '0 8px 22px rgba(13,26,48,.06)' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', color: '#1c3564' }}>{fmtLong(ev.event_date)}{ev.event_time ? ` · ${ev.event_time}` : ''}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', color: '#2a2a2a' }}>{fmtLong(ev.event_date)}{ev.event_time ? ` · ${ev.event_time}` : ''}</div>
             <div className="serif" style={{ fontSize: 19, fontWeight: 700, margin: '4px 0 2px', fontFamily: 'Georgia,serif' }}>{ev.title}</div>
             {ev.venue && <div style={{ fontSize: 13, color: '#6b7280' }}>📍 {ev.venue}</div>}
 
@@ -70,14 +70,14 @@ export default function MemberPortal({ token }) {
 
             {ev.lineup && ev.lineup.length > 0 && <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: '#8a8598', marginBottom: 9 }}>Singing with you</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{ev.lineup.map((p, i) => { const c = VP[p.voice_part] || VP.Soprano; return <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999, background: p.me ? '#0d1a30' : '#faf5e9', color: p.me ? '#fff' : '#1a1a2e', fontSize: 12, fontWeight: 600 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: c.fg }} />{p.me ? 'You' : p.name.split(' ')[0]}<span style={{ color: p.me ? '#9aa4b8' : '#8a8598', fontSize: 10.5 }}>{p.voice_part}{p.response === 'pending' ? ' · TBD' : ''}</span></span> })}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{ev.lineup.map((p, i) => { const c = VP[p.voice_part] || VP.Soprano; return <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999, background: p.me ? '#1a1a1a' : '#faf5e9', color: p.me ? '#fff' : '#1a1a2e', fontSize: 12, fontWeight: 600 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: c.fg }} />{p.me ? 'You' : p.name.split(' ')[0]}<span style={{ color: p.me ? '#9aa4b8' : '#8a8598', fontSize: 10.5 }}>{p.voice_part}{p.response === 'pending' ? ' · TBD' : ''}</span></span> })}</div>
             </div>}
 
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: '#8a8598', marginBottom: 9 }}>Music — {ev.songs.length} {ev.songs.length === 1 ? 'piece' : 'pieces'}</div>
               {ev.songs.length === 0 && <div style={{ fontSize: 13, color: '#8a8598' }}>The program hasn’t been set yet — check back soon.</div>}
               {ev.songs.map((s, i) => <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: i ? '1px solid #f0e8d6' : 'none' }}>
-                <span style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 8, background: '#0d1a30', color: '#e8b430', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                <span style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 8, background: '#1a1a1a', color: '#c8102e', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
                 <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{s.title}</div><div style={{ fontSize: 12, color: '#8a8598' }}>{s.arranger || 'Traditional'}{s.pages ? ` · ${s.pages} pp` : ''}</div></div>
                 {s.file_url
                   ? <a href={s.file_url} target="_blank" rel="noreferrer" style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, background: '#20a89a', color: '#fff', padding: '8px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>⬇ Download</a>
@@ -94,8 +94,8 @@ export default function MemberPortal({ token }) {
               <div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}>{state.director.name}</div>
               <div style={{ fontSize: 11.5, color: '#a8a3b5', marginBottom: 10 }}>Music Director</div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-                {state.director.email && <a href={`mailto:${state.director.email}`} style={{ flex: '1 1 120px', maxWidth: 200, background: '#1c3564', color: '#e8b430', padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>✉ Email</a>}
-                {state.director.phone && <a href={`tel:${state.director.phone}`} style={{ flex: '1 1 120px', maxWidth: 200, background: '#fff', color: '#1c3564', border: '1px solid #e2d6bd', padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>☎ Call</a>}
+                {state.director.email && <a href={`mailto:${state.director.email}`} style={{ flex: '1 1 120px', maxWidth: 200, background: '#2a2a2a', color: '#c8102e', padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>✉ Email</a>}
+                {state.director.phone && <a href={`tel:${state.director.phone}`} style={{ flex: '1 1 120px', maxWidth: 200, background: '#fff', color: '#2a2a2a', border: '1px solid #e2d6bd', padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>☎ Call</a>}
               </div>
             </div>
             : <div style={{ textAlign: 'center', color: '#a8a3b5', fontSize: 12, marginTop: 26 }}>Questions? Just reply to the director’s email.</div>}
@@ -112,7 +112,7 @@ function Blackouts({ blackouts, onToggle, eventDates }) {
   const y = base.getFullYear(), m = base.getMonth()
   const firstDow = new Date(y, m, 1).getDay(); const days = new Date(y, m + 1, 0).getDate()
   const cells = []; for (let i = 0; i < firstDow; i++) cells.push(null); for (let d = 1; d <= days; d++) cells.push(new Date(y, m, d)); while (cells.length % 7) cells.push(null)
-  const navBtn = { width: 32, height: 32, borderRadius: 8, border: '1px solid #e2d6bd', background: '#fff', color: '#1c3564', fontSize: 17, fontWeight: 700, cursor: 'pointer' }
+  const navBtn = { width: 32, height: 32, borderRadius: 8, border: '1px solid #e2d6bd', background: '#fff', color: '#2a2a2a', fontSize: 17, fontWeight: 700, cursor: 'pointer' }
   return <div style={{ background: '#fff', border: '1px solid #efe6d4', borderRadius: 16, padding: 18, marginTop: 24, boxShadow: '0 8px 22px rgba(13,26,48,.06)' }}>
     <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '.03em', color: '#1a1a2e' }}>When you can’t sing</div>
     <div style={{ fontSize: 12.5, color: '#8a8598', margin: '4px 0 14px' }}>Tap any day you’re unavailable. Beth sees this instantly — no email needed. Tap again to clear it.</div>
@@ -128,7 +128,7 @@ function Blackouts({ blackouts, onToggle, eventDates }) {
         const k = ymd(d); const past = d < today; const blocked = blackouts.has(k); const isEvent = eventDates.has(k); const isToday = k === tkey
         return <button key={i} disabled={past} onClick={() => onToggle(k)} title={isEvent ? 'You’re booked to sing this day' : ''} style={{
           minHeight: 46, borderRadius: 9, cursor: past ? 'default' : 'pointer', position: 'relative',
-          border: isToday ? '2px solid #1c3564' : '1px solid #f0e8d6',
+          border: isToday ? '2px solid #2a2a2a' : '1px solid #f0e8d6',
           background: blocked ? '#fde2e2' : past ? '#f7f3ea' : '#fff',
           color: past ? '#cfc6b4' : blocked ? '#b91c1c' : '#4a4a5e', fontSize: 13, fontWeight: blocked ? 800 : 600,
         }}>

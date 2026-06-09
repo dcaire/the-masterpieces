@@ -33,15 +33,15 @@ export const Defs = () => (
 // signature five-bar stripe (gold·copper·rose·teal·iris) along the base.
 export const Logo = ({ size = 38 }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="13" fill="#0d1a30" />
+    <rect width="48" height="48" rx="13" fill="#1a1a1a" />
     {/* staff lines */}
-    {[15, 19.5, 24, 28.5, 33].map(y => <line key={y} x1="8" y1={y} x2="40" y2={y} stroke="#e8b430" strokeWidth="0.6" opacity="0.26" />)}
+    {[15, 19.5, 24, 28.5, 33].map(y => <line key={y} x1="8" y1={y} x2="40" y2={y} stroke="#c8102e" strokeWidth="0.6" opacity="0.26" />)}
     {/* treble clef (brand path) */}
     <g transform="translate(13.5 6.5) scale(0.5)">
-      <path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke="#e8b430" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M 18 58 C 14 54 8 46 8 38 C 8 30 12 26 18 24 L 18 24 C 18 18 18 10 20 6 C 22 2 26 0 28 2 C 30 4 28 8 26 12 C 24 16 20 22 18 28 L 18 28 C 24 28 30 32 30 40 C 30 48 24 52 18 52 C 14 52 12 48 12 44 C 12 40 14 38 18 38 C 22 38 24 40 24 44 C 24 46 22 48 20 48" fill="none" stroke="#c8102e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     </g>
     {/* five-bar stripe */}
-    <rect x="8" y="39" width="6.4" height="3" fill="#e8b430" />
+    <rect x="8" y="39" width="6.4" height="3" fill="#c8102e" />
     <rect x="14.4" y="39" width="6.4" height="3" fill="#e07830" />
     <rect x="20.8" y="39" width="6.4" height="3" fill="#d03a6a" />
     <rect x="27.2" y="39" width="6.4" height="3" fill="#20a89a" />

@@ -9,6 +9,7 @@ const SIGNATURE_TAG = 'A mixed vocal ensemble';
 // Brand logomark + decorative musical-staff flourish (hosted PNGs — render in all
 // mail clients; SVG/local files do not).
 const LOGO_URL = 'https://the-masterpieces-app.netlify.app/logomark.png';
+const LOGO_FULL_URL = 'https://the-masterpieces-app.netlify.app/logo-light.png';
 const STAFF_URL = 'https://the-masterpieces-app.netlify.app/email-staff.png';
 // Optional: paste a public image URL (e.g. the group photo) to show it atop every email instead of the logo.
 const BAND_PHOTO_URL = '';
@@ -29,14 +30,9 @@ function shell(bodyHtml, accent = ['#1a1a1a', '#2a2a2a']) {
   return `<div style="margin:0;padding:24px;background:#fdf8ee;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a2e">
   <div style="max-width:560px;margin:0 auto;background:#fffdf8;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(13,26,48,.16)">
     ${FIVE_BAR}
-    <div style="background:#1a1a1a;padding:34px 32px 30px;text-align:center">
-      ${BAND_PHOTO_URL
-        ? `<img src="${BAND_PHOTO_URL}" alt="The Masterpieces" width="120" style="width:120px;height:120px;border-radius:16px;object-fit:cover;border:3px solid rgba(200,16,46,.5)" />`
-        : `<img src="${LOGO_URL}" alt="The Masterpieces" width="72" height="72" style="display:inline-block;width:72px;height:72px;border-radius:18px" />`}
-      <div style="margin-top:8px;color:#c8102e;font-size:10px;letter-spacing:5px;text-transform:uppercase">The</div>
-      <div style="margin-top:2px;color:#fdf8ee;font-size:24px;font-weight:700;letter-spacing:3px;text-transform:uppercase;font-family:Georgia,serif">Masterpieces</div>
-      <div style="margin-top:6px;color:rgba(200,16,46,.9);font-size:11px;letter-spacing:2px;text-transform:uppercase">Vocal Ensemble</div>
-      <img src="${STAFF_URL}" alt="" width="300" style="display:block;width:300px;max-width:82%;height:auto;margin:16px auto 0" />
+    <div style="background:#1a1a1a;padding:32px 32px 26px;text-align:center">
+      <img src="${LOGO_FULL_URL}" alt="Texas Master Chorale Masterpieces" width="320" style="display:block;width:320px;max-width:86%;height:auto;margin:0 auto" />
+      <div style="margin-top:14px;color:rgba(200,16,46,.95);font-size:11px;letter-spacing:3px;text-transform:uppercase">Vocal Ensemble</div>
     </div>
     <div style="padding:32px">${bodyHtml}</div>
     <div style="padding:22px 32px;background:#faf5e9;border-top:1px solid #efe6d4;text-align:center">

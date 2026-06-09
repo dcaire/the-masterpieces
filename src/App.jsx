@@ -353,11 +353,14 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, 
   const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
   const nxt = E.filter(e => dU(e.event_date) > 0).sort((a, b) => new Date(a.event_date) - new Date(b.event_date))[0]
   const nA = nxt ? (aM[nxt.id] || {}) : {}
+  const dyr = String(new Date().getFullYear())
+  const totalRev = E.reduce((s, e) => s + Number(e.donation || 0), 0)
+  const yearRev = E.filter(e => (e.event_date || '').slice(0, 4) === dyr).reduce((s, e) => s + Number(e.donation || 0), 0)
   const cards = [
     { l: 'The Ensemble', v: core.length, s: guests.length ? `+ ${guests.length} guest singer${guests.length > 1 ? 's' : ''}` : 'Core voices', grad: G.purple, ic: <Users size={20} />, go: 'ensemble' },
     { l: 'Cloud Library', v: M.length, s: `${sN} on iPads · ${tMB} MB`, grad: G.teal, ic: <Note size={20} />, go: 'music' },
     { l: 'Follow-ups Due', v: pFU, s: 'within 3 days', grad: G.amber, ic: <Bell size={20} />, go: 'bookings' },
-    { l: 'Booking Value', v: $(pipe), s: `pipeline · ${I.filter(i => i.status !== 'lost').length} active leads`, grad: G.green, ic: <Dollar size={20} />, go: 'bookings' },
+    { l: `${dyr} Revenue`, v: $(yearRev), s: `${E.length} performances · ${$(totalRev)} all-time`, grad: G.green, ic: <Dollar size={20} />, go: 'events' },
   ]
   return <div className="fade">
     <div style={{ marginBottom: 18 }}>
@@ -703,7 +706,7 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 
 /* ---------- events ---------- */
 function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }) {
-  const [evf, setEvf] = useState('upcoming')
+  const [evf, setEvf] = useState('all')
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
     const away = new Set((U || []).filter(u => ev.event_date && u.date === ev.event_date).map(u => u.roster_id)); const awayNames = aR.filter(m => away.has(m.id)).map(m => m.name.split(' ')[0])

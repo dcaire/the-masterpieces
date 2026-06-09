@@ -62,6 +62,7 @@ export const TEMPLATES = {
   followup: { label: 'Gentle Follow-up', accent: ['#20a89a', '#3898d4'], hint: 'Friendly nudge if you haven’t heard back' },
   confirmation: { label: 'Booking Confirmation', accent: ['#20a89a', '#1c8f82'], hint: 'Lock in the details once confirmed' },
   thanks: { label: 'Thank You', accent: ['#e8b430', '#e07830'], hint: 'A note of thanks after the performance' },
+  reminder: { label: 'Stay in Touch', accent: ['#7b52c4', '#3898d4'], hint: 'Remind a past client we’re available' },
 };
 
 export function buildEmail(type, lead) {
@@ -109,6 +110,16 @@ export function buildEmail(type, lead) {
       `With gratitude and song,`,
     ];
     html = shell(p(`Hi ${first(name)},`) + p(`On behalf of the whole ensemble — <strong>thank you</strong> for having The Masterpieces at <strong>${org}</strong>. It was a joy to share music with you and your guests.`) + p(`If photos or recordings are floating around, we'd love to see them. And if you ever need us again, we're only a note away.`) + p(`With gratitude and song. 🎼`), accent);
+  } else if (type === 'reminder') {
+    subject = `Keeping in touch — The Masterpieces`;
+    lines = [
+      `Hi ${first(name)},`,
+      `It was such a pleasure singing for ${org}! I wanted to keep in touch and let you know The Masterpieces are booking again — luncheons, services, club meetings, holiday parties, galas, and celebrations of all kinds.`,
+      `We're a mixed vocal ensemble bringing jazz, swing, and pop standards (plus seasonal favorites) tailored to your event. If you have something coming up — or know another group who'd enjoy us — I'd love to help.`,
+      `Just reply and we'll find a date.`,
+      `Warmly,`,
+    ];
+    html = shell(p(`Hi ${first(name)},`) + p(`It was such a pleasure singing for <strong>${org}</strong>! I wanted to keep in touch and let you know <strong>The Masterpieces</strong> are booking again — luncheons, services, club meetings, holiday parties, galas, and celebrations of all kinds.`) + p(`We're a mixed vocal ensemble bringing jazz, swing, and pop standards (plus seasonal favorites) tailored to your event. If you have something coming up — or know another group who'd enjoy us — I'd love to help.`) + p(`Just reply and we'll find a date. 🎶`) + button('Book us again', accent), accent);
   } else if (type === 'intro') {
     subject = `Live music for ${org} — The Masterpieces`;
     lines = [

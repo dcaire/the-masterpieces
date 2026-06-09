@@ -169,6 +169,10 @@ export default function App() {
   const addP = async d => { const { data: ins } = await sb.from('prospects').insert({ organization: d.org, org_type: d.type, city: d.city, organizer_name: d.organizer, organizer_role: d.role, email: d.email, phone: d.phone, website: d.website, fit_score: Number(d.fit) || 3, status: 'prospect', notes: d.notes }).select().single(); if (ins) { sP(p => [ins, ...p]); sShP(false); noti('Prospect added') } }
   const updP = async d => { const id = eP; const patch = { organization: d.org, org_type: d.type, city: d.city, organizer_name: d.organizer, organizer_role: d.role, email: d.email, phone: d.phone, website: d.website, fit_score: Number(d.fit) || 3, notes: d.notes }; const { error } = await sb.from('prospects').update(patch).eq('id', id); if (error) { noti('Save failed — try again'); return } sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); sEP(null); noti('Prospect updated') }
   const updPS = async (id, st) => { const t = new Date().toISOString().split('T')[0]; const patch = st === 'contacted' ? { status: st, last_contacted: t } : { status: st }; await sb.from('prospects').update(patch).eq('id', id); sP(p => p.map(x => x.id === id ? { ...x, ...patch } : x)); noti(`Marked “${PS[st]?.l || st}”`) }
+  const addDays = n => new Date(Date.now() + n * 86400000).toISOString().split('T')[0]
+  const startDrip = async id => { const x = P.find(p => p.id === id); const patch = { drip_active: true, drip_next: addDays(x?.drip_interval || 90) }; await sb.from('prospects').update(patch).eq('id', id); sP(p => p.map(y => y.id === id ? { ...y, ...patch } : y)); noti('Drip reminders started') }
+  const stopDrip = async id => { const patch = { drip_active: false, drip_next: null }; await sb.from('prospects').update(patch).eq('id', id); sP(p => p.map(y => y.id === id ? { ...y, ...patch } : y)); noti('Drip reminders stopped') }
+  const sendReminder = async x => { const t = new Date().toISOString().split('T')[0]; const patch = { drip_active: true, last_contacted: t, drip_next: addDays(x.drip_interval || 90) }; await sb.from('prospects').update(patch).eq('id', x.id); sP(p => p.map(y => y.id === x.id ? { ...y, ...patch } : y)); sEmail({ lead: { contact_name: x.organizer_name || x.organization, organization: x.organization, email: x.email, status: x.status }, template: 'reminder' }); noti(`Reminder logged · next in ${x.drip_interval || 90} days`) }
   const convP = async x => { const n = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]; const { data: ins } = await sb.from('inquiries').insert({ contact_name: x.organizer_name || x.organization, organization: x.organization, phone: x.phone, email: x.email, event_type: 'Other', expected_donation: 0, notes: `From prospect (${x.org_type}${x.city ? ', ' + x.city : ''}).${x.notes ? ' ' + x.notes : ''}`, status: 'new', next_follow_up: n }).select().single(); if (ins) { sI(p => [ins, ...p]); await sb.from('prospects').update({ status: 'interested' }).eq('id', x.id); sP(p => p.map(y => y.id === x.id ? { ...y, status: 'interested' } : y)); sSPro(null); sTab('bookings'); noti('Added to Bookings as a new lead') } }
   const convE = async inq => { const title = `${inq.event_type || 'Performance'}${inq.organization ? ' · ' + inq.organization : ''}`; const { data: ins, error } = await sb.from('events').insert({ title, event_date: inq.event_date || null, event_time: '', venue: inq.organization || '', donation: inq.expected_donation || 0, status: 'confirmed', songs_planned: [], format: inq.format || 'Quartet', singers_needed: inq.singers_needed ?? fmtNeed(inq.format) }).select().single(); if (error || !ins) { noti('Could not create event — try again'); return } const rows = A.filter(a => a.inquiry_id === inq.id).map(a => ({ event_id: ins.id, roster_id: a.roster_id, response: a.response })); if (rows.length) { const { data: cp } = await sb.from('member_availability').insert(rows).select(); if (cp) sA(p => [...p, ...cp]) } sE(p => [...p, ins].sort(byEvDate)); sSInq(null); sTab('events'); noti('Event created — availability carried over') }
   const addEv = async d => { const { data: ins, error } = await sb.from('events').insert({ title: d.title, event_date: d.date || null, event_time: d.time, venue: d.venue, donation: d.fee, status: d.status, songs_planned: [] }).select().single(); if (error || !ins) { noti('Could not save — try again'); return } sE(p => [...p, ins].sort(byEvDate)); sShEv(false); noti('Event added') }
@@ -207,7 +211,7 @@ export default function App() {
       {tab === 'ensemble' && <Ensemble {...{ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
       {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel, delI, U }} />}
-      {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
+      {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail, startDrip, stopDrip, sendReminder }} />}
       {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }} />}
     </main>
 
@@ -627,7 +631,9 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
 }
 
 /* ---------- prospects (CRM) ---------- */
-function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }) {
+function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail, startDrip, stopDrip, sendReminder }) {
+  const todayK = new Date().toISOString().split('T')[0]
+  const dripDue = P.filter(x => x.drip_active && x.drip_next && x.drip_next <= todayK)
   const statuses = [['all', 'All'], ['prospect', 'Prospect'], ['contacted', 'Contacted'], ['interested', 'Interested'], ['booked', 'Booked'], ['passed', 'Passed']]
   const stars = n => '★★★★★'.slice(0, Math.max(0, Math.min(5, n || 0)))
   const composeP = x => sEmail({ lead: { contact_name: x.organizer_name || '', organization: x.organization, email: x.email, status: x.status } })
@@ -643,7 +649,7 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ background: PTC[x.org_type] || G.purple, padding: '24px 26px', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div><h2 className="serif" style={{ fontSize: 24, fontWeight: 700 }}>{x.organization}</h2><div style={{ fontSize: 13, opacity: .92, marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}><span>{x.org_type}</span>{x.city && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} />{x.city}</span>}</div></div>
-          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, color: '#FDE68A', letterSpacing: 1 }} title={`Fit ${x.fit_score}/5`}>{stars(x.fit_score)}</div><div style={{ marginTop: 6 }}><Pill bg="rgba(255,255,255,.2)" fg="#fff">{ps.l}</Pill></div></div>
+          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, color: '#FDE68A', letterSpacing: 1 }} title={`Fit ${x.fit_score}/5`}>{stars(x.fit_score)}</div><div style={{ marginTop: 6, display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}><Pill bg="rgba(255,255,255,.2)" fg="#fff">{ps.l}</Pill>{x.source === 'Past client' && <Pill bg="rgba(255,255,255,.2)" fg="#fff">★ Past client</Pill>}</div></div>
         </div>
         <div style={{ padding: 26 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginBottom: 18 }}>
@@ -653,7 +659,13 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
             <Stat ic={<Globe size={16} />} l="Website" v={x.website ? <a href={x.website} target="_blank" rel="noreferrer" style={{ color: '#1c3564' }}>{x.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a> : '—'} />
           </div>
           {x.notes && <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#4b5563', background: '#faf5e9', padding: 15, borderRadius: 12, marginBottom: 16 }}>{x.notes}</div>}
-          {x.source && <div style={{ fontSize: 11.5, color: '#8a8598', marginBottom: 18 }}>Source: <a href={x.source} target="_blank" rel="noreferrer" style={{ color: '#6e6e82' }}>{x.source.replace(/^https?:\/\//, '').slice(0, 60)}</a></div>}
+          {x.source && x.source !== 'Past client' && <div style={{ fontSize: 11.5, color: '#8a8598', marginBottom: 18 }}>Source: <a href={x.source} target="_blank" rel="noreferrer" style={{ color: '#6e6e82' }}>{x.source.replace(/^https?:\/\//, '').slice(0, 60)}</a></div>}
+          <div style={{ background: x.drip_active ? '#eef2fb' : '#faf5e9', border: `1px solid ${x.drip_active ? '#cbd8f0' : '#efe6d4'}`, borderRadius: 13, padding: 16, marginBottom: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0 }}><SectionTitle>Stay-in-touch drip</SectionTitle><div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 5 }}>{x.drip_active ? (x.drip_next && x.drip_next <= todayK ? <span style={{ color: '#B91C1C', fontWeight: 700 }}>Reminder due now</span> : <>Next reminder <b style={{ color: '#1a1a2e' }}>{x.drip_next ? fmt(x.drip_next) : '—'}</b> · every {x.drip_interval || 90} days</>) : 'Send periodic “we’re still available” reminders to keep this client warm.'}</div></div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>{x.drip_active ? <><Btn small grad={G.amber} onClick={() => sendReminder(x)}><Send size={14} />Send reminder</Btn><Btn small ghost onClick={() => stopDrip(x.id)}>Stop</Btn></> : <Btn small grad={G.purple} onClick={() => startDrip(x.id)}><Bell size={14} />Start drip</Btn>}</div>
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
             <Btn grad={G.purple} onClick={() => composeP(x)}><Mail size={16} />Compose Email</Btn>
             {x.status === 'prospect' && <Btn ghost onClick={() => updPS(x.id, 'contacted')}><Check size={16} />Mark Contacted</Btn>}
@@ -672,7 +684,8 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
   const active = P.filter(x => x.status !== 'passed').length
 
   return <div className="fade">
-    <Header title="Prospects" sub="Local Houston-area groups that book a vocal ensemble like ours." action={{ label: 'Add Prospect', on: () => sShP(true) }} />
+    <Header title="Prospects" sub="Past clients and new leads — keep them warm and book repeat performances." action={{ label: 'Add Prospect', on: () => sShP(true) }} />
+    {dripDue.length > 0 && <div onClick={() => sSPro(dripDue[0].id)} style={{ background: G.amber, color: '#fff', borderRadius: 14, padding: '13px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 11, cursor: 'pointer', boxShadow: '0 8px 22px rgba(13,26,48,.18)' }}><Bell size={19} /><div style={{ fontSize: 13.5 }}><b>{dripDue.length} drip reminder{dripDue.length > 1 ? 's' : ''} due:</b> {dripDue.slice(0, 4).map(d => d.organizer_name || d.organization).join(', ')}{dripDue.length > 4 ? '…' : ''}</div></div>}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 18 }}>
       <div className="card" style={{ padding: 16 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#8a8598', textTransform: 'uppercase', letterSpacing: '.05em' }}>Active Targets</div><div style={{ fontSize: 28, fontWeight: 800, marginTop: 6 }}>{active}</div></div>
       {byType.map(([t, n]) => <div key={t} className="card lift" style={{ padding: 16, cursor: 'pointer' }} onClick={() => sPtf(ptf === t ? 'all' : t)}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconChip grad={PTC[t]} size={30}><Target size={15} /></IconChip><div style={{ fontSize: 11.5, fontWeight: 700, color: '#4a4a5e', lineHeight: 1.15 }}>{t}</div></div><div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{n}</div></div>)}
@@ -694,10 +707,11 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
           <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.organization}</div>
           <div style={{ fontSize: 11.5, color: '#8a8598', marginTop: 2 }}>{x.org_type}{x.city ? ` · ${x.city}` : ''}</div>
         </div>
-        <Pill bg={ps.bg} fg={ps.fg}>{ps.l}</Pill>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', flexShrink: 0 }}><Pill bg={ps.bg} fg={ps.fg}>{ps.l}</Pill>{x.source === 'Past client' && <Pill bg="#FEF3C7" fg="#B45309">★ client</Pill>}</div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 8 }}>
-        <div style={{ fontSize: 12, color: '#4a4a5e', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.organizer_name || x.email || x.phone || 'No contact yet'}</div>
+        <div style={{ fontSize: 12, color: '#4a4a5e', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, minWidth: 0 }}>{x.organizer_name || x.email || x.phone || 'No contact yet'}</div>
+        {x.drip_active && <Pill bg={x.drip_next && x.drip_next <= todayK ? '#FEE2E2' : '#EDE9FE'} fg={x.drip_next && x.drip_next <= todayK ? '#B91C1C' : '#1c3564'}>{x.drip_next && x.drip_next <= todayK ? 'reminder due' : 'drip on'}</Pill>}
         <div style={{ fontSize: 13, color: '#F59E0B', letterSpacing: 1, flexShrink: 0 }} title={`Fit ${x.fit_score}/5`}>{stars(x.fit_score)}</div>
       </div>
     </div> })}{!fd.length && <Empty>No prospects in this view.</Empty>}</div>
@@ -799,7 +813,7 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti, emailCfg, emailFrom 
   const lead = email.lead
   const ev = email.availability || email.proposal
   const defType = isFollowup ? (lead.status === 'prospect' ? 'intro' : lead.status === 'contacted' ? 'followup' : lead.status === 'confirmed' ? 'confirmation' : lead.status === 'lost' ? 'thanks' : 'outreach') : null
-  const [type, sType] = useState(defType)
+  const [type, sType] = useState(email.template || defType)
   const built = useMemo(() => isAvail ? buildAvailabilityEmail(ev) : isProposal ? buildProposalEmail(email.proposal, email.songs) : buildEmail(type, lead), [type, isAvail, isProposal, lead, ev, email.songs, email.proposal])
   const [subject, sSubject] = useState(built.subject)
   const [body, sBody] = useState(built.text)

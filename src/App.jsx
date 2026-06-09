@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { sb } from './sb'
 import { buildEmail, buildAvailabilityEmail, buildProposalEmail, mailto, TEMPLATES } from './email'
-import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Copy, Send, Bell, MapPin, Arrow, Search, Dollar, Pencil, Target, Globe } from './icons'
+import { Defs, Logo, Note, Mail, Cloud, Tablet, Calendar, Users, Sparkle, Phone, Check, Clock, Plus, Trash, Copy, Send, Bell, MapPin, Arrow, Search, Dollar, Pencil, Target, Globe } from './icons'
 
 /* ---------- helpers ---------- */
 const fmt = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return d || '' } }
@@ -115,6 +115,8 @@ export default function App() {
 
   const noti = m => { sTst(m); setTimeout(() => sTst(null), 3000) }
   const nav = t => { sTab(t); sSInq(null); sSEv(null); sSSng(null); sSPro(null) }
+  const openEvent = id => { sSInq(null); sSPro(null); sSSng(null); sSEv(id); sTab('events') }
+  const openBooking = id => { sSEv(null); sSPro(null); sSSng(null); sSInq(id); sTab('bookings') }
 
   useEffect(() => { (async () => {
     try {
@@ -142,6 +144,9 @@ export default function App() {
   const pipe = I.filter(x => x.status !== 'lost').reduce((s, x) => s + Number(x.expected_donation), 0)
 
   /* data ops */
+  const delI = async id => { const x = I.find(i => i.id === id); if (!window.confirm(`Delete the booking for ${x?.contact_name || 'this contact'}? This can’t be undone.`)) return; await sb.from('member_availability').delete().eq('inquiry_id', id); const { error } = await sb.from('inquiries').delete().eq('id', id); if (error) { noti('Delete failed — try again'); return } sA(p => p.filter(a => a.inquiry_id !== id)); sI(p => p.filter(i => i.id !== id)); sSInq(null); noti('Booking deleted') }
+  const delEv = async id => { const x = E.find(e => e.id === id); if (!window.confirm(`Delete the event “${x?.title || ''}”? This can’t be undone.`)) return; await sb.from('member_availability').delete().eq('event_id', id); const { error } = await sb.from('events').delete().eq('id', id); if (error) { noti('Delete failed — try again'); return } sA(p => p.filter(a => a.event_id !== id)); sE(p => p.filter(e => e.id !== id)); sSEv(null); noti('Event deleted') }
+  const delS = async id => { const x = R.find(r => r.id === id); if (!window.confirm(`Remove ${x?.name || 'this singer'} from the ensemble? This deletes their record and availability history.`)) return; await sb.from('member_availability').delete().eq('roster_id', id); const { error } = await sb.from('roster').delete().eq('id', id); if (error) { noti('Delete failed — try again'); return } sA(p => p.filter(a => a.roster_id !== id)); sR(p => p.filter(r => r.id !== id)); sSSng(null); noti(`${x?.name || 'Singer'} removed`) }
   const togSync = async id => { const s = M.find(x => x.id === id); await sb.from('music_library').update({ cloud_only: !s.cloud_only }).eq('id', id); sM(p => p.map(x => x.id === id ? { ...x, cloud_only: !x.cloud_only } : x)); noti(s.cloud_only ? `“${s.title}” synced to iPads` : `“${s.title}” set to cloud only`) }
   const updIS = async (id, st) => { const t = new Date().toISOString().split('T')[0]; await sb.from('inquiries').update({ status: st, last_follow_up: t }).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, status: st, last_follow_up: t } : x)); noti(`Marked “${st}”`) }
   const logFU = async id => { const t = new Date().toISOString().split('T')[0], n = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]; await sb.from('inquiries').update({ last_follow_up: t, next_follow_up: n }).eq('id', id); sI(p => p.map(x => x.id === id ? { ...x, last_follow_up: t, next_follow_up: n } : x)); noti('Follow-up logged · next in 7 days') }
@@ -197,15 +202,15 @@ export default function App() {
     </header>
 
     <main style={{ maxWidth: 1180, margin: '0 auto', padding: '30px 22px 70px' }}>
-      {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom }} />}
+      {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom, openEvent, openBooking }} />}
       {tab === 'ensemble' && <Ensemble {...{ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
-      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel, delI }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
-      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel }} />}
+      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv }} />}
     </main>
 
-    {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng, noti }} />}
+    {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng, noti, delS }} />}
     {shS && <FModal t="Add a Singer" sub="Add a core member or guest singer" onX={() => sShS(false)} onOk={addS} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'phone', l: 'Phone' }, { k: 'email', l: 'Email' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: 'member' }]} />}
     {shG && <FModal t="Invite a Guest Singer" sub="Bring in a sub to fill out the lineup" onX={() => sShG(false)} onOk={addG} fs={[{ k: 'name', l: 'Full name', rq: 1 }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: 'Soprano' }, { k: 'email', l: 'Email (so you can invite them)', rq: 1 }, { k: 'phone', l: 'Phone' }]} />}
     {eSng != null && (() => { const s = R.find(r => r.id === eSng); return s ? <FModal t="Edit Singer" sub={`Update ${s.name}’s details`} onX={() => sESng(null)} onOk={updS} fs={[{ k: 'name', l: 'Full name', rq: 1, df: s.name }, { k: 'phone', l: 'Phone', df: s.phone || '' }, { k: 'email', l: 'Email', df: s.email || '' }, { k: 'voicePart', l: 'Voice part', ty: 'sel', opts: ['Soprano', 'Alto', 'Tenor', 'Bass'], df: s.voice_part }, { k: 'type', l: 'Role', ty: 'tog', opts: ['member', 'guest'], df: s.singer_type }]} /> : null })()}
@@ -271,8 +276,61 @@ function MissionHero() {
   </div>
 }
 
+/* ---------- month calendar (dashboard) ---------- */
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+function CalendarCard({ E, I, openEvent, openBooking }) {
+  const today = new Date(); const tkey = ymd(today)
+  const [off, setOff] = useState(0)
+  const [sel, setSel] = useState(tkey)
+  const base = new Date(today.getFullYear(), today.getMonth() + off, 1)
+  const y = base.getFullYear(), m = base.getMonth()
+  const items = useMemo(() => {
+    const o = {}
+    E.forEach(e => { if (e.event_date) (o[e.event_date] ||= []).push({ type: 'event', id: e.id, title: e.title, time: e.event_time, venue: e.venue, color: '#16a34a' }) })
+    I.forEach(i => { if (i.event_date && i.status !== 'lost') (o[i.event_date] ||= []).push({ type: 'booking', id: i.id, title: `${i.contact_name} · ${i.event_type}`, color: '#e8b430' }) })
+    return o
+  }, [E, I])
+  const firstDow = new Date(y, m, 1).getDay(); const days = new Date(y, m + 1, 0).getDate()
+  const cells = []; for (let i = 0; i < firstDow; i++) cells.push(null); for (let d = 1; d <= days; d++) cells.push(new Date(y, m, d)); while (cells.length % 7) cells.push(null)
+  const selItems = items[sel] || []
+  const navBtn = { width: 30, height: 30, borderRadius: 8, border: '1px solid #e2d6bd', background: '#fff', color: '#1c3564', fontSize: 16, fontWeight: 700, cursor: 'pointer' }
+  return <div className="card" style={{ padding: 20, marginBottom: 22 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}><Calendar size={18} color="#1c3564" /><span className="serif" style={{ fontSize: 18, fontWeight: 700 }}>{base.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button onClick={() => setOff(off - 1)} style={navBtn}>‹</button>
+        <button onClick={() => { setOff(0); setSel(tkey) }} style={{ ...navBtn, width: 'auto', padding: '0 12px', fontSize: 12, fontWeight: 700 }}>Today</button>
+        <button onClick={() => setOff(off + 1)} style={navBtn}>›</button>
+      </div>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
+      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, i) => <div key={i} style={{ textAlign: 'center', fontSize: 10.5, fontWeight: 800, color: '#a8a3b5', padding: '0 0 4px' }}>{w}</div>)}
+      {cells.map((d, i) => {
+        if (!d) return <div key={i} />
+        const k = ymd(d); const its = items[k] || []; const isToday = k === tkey; const isSel = k === sel
+        return <button key={i} onClick={() => setSel(k)} style={{ minHeight: 50, borderRadius: 9, border: isSel ? '2px solid #1c3564' : '1px solid #f0e8d6', background: isToday ? '#faf3e6' : '#fff', padding: '5px 0 4px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 12.5, fontWeight: isToday ? 800 : 600, color: isToday ? '#1c3564' : '#4a4a5e' }}>{d.getDate()}</span>
+          <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>{its.slice(0, 3).map((it, j) => <span key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: it.color }} />)}</div>
+        </button>
+      })}
+    </div>
+    <div style={{ display: 'flex', gap: 14, fontSize: 11, color: '#8a8598', margin: '12px 0 4px' }}><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a' }} />Events</span><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e8b430' }} />Bookings</span></div>
+    <div style={{ borderTop: '1px solid #efe6d4', marginTop: 8, paddingTop: 12 }}>
+      <SectionTitle>{new Date(sel + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</SectionTitle>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 8 }}>
+        {selItems.length ? selItems.map((it, i) => <button key={i} onClick={() => it.type === 'event' ? openEvent(it.id) : openBooking(it.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 11, background: '#faf5e9', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+          <span style={{ width: 9, height: 9, borderRadius: '50%', background: it.color, flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: '#1a1a2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.title}</div>{it.type === 'event' && (it.time || it.venue) && <div style={{ fontSize: 11.5, color: '#8a8598' }}>{[it.time, it.venue].filter(Boolean).join(' · ')}</div>}</div>
+          <Pill bg={it.type === 'event' ? '#D1FAE5' : '#FEF3C7'} fg={it.type === 'event' ? '#047857' : '#B45309'}>{it.type}</Pill>
+          <Arrow size={15} style={{ color: '#cfc8d8', flexShrink: 0 }} />
+        </button>) : <div style={{ fontSize: 13, color: '#a8a3b5', padding: '6px 0' }}>Nothing scheduled this day.</div>}
+      </div>
+    </div>
+  </div>
+}
+
 /* ---------- dashboard ---------- */
-function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom }) {
+function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom, openEvent, openBooking }) {
   const hr = new Date().getHours()
   const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
   const nxt = E.filter(e => dU(e.event_date) > 0).sort((a, b) => new Date(a.event_date) - new Date(b.event_date))[0]
@@ -302,6 +360,7 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, 
         <div style={{ fontSize: 12.5, color: '#8a8598', marginTop: 2 }}>{c.s}</div>
       </div>)}
     </div>
+    <CalendarCard E={E} I={I} openEvent={openEvent} openBooking={openBooking} />
     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 18 }}>
       {nxt ? <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ background: G.purple, padding: '20px 24px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
@@ -358,7 +417,7 @@ function Ensemble({ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS
   </div>
 }
 
-function SingerDetail({ R, sSng, sSSng, togAct, togTy, sESng, noti }) {
+function SingerDetail({ R, sSng, sSSng, togAct, togTy, sESng, noti, delS }) {
   const s = R.find(r => r.id === sSng); if (!s) return null
   const pc = VP[s.voice_part] || VP.Soprano
   const portalLink = `${window.location.origin}/?member=${s.portal_token || ''}`
@@ -384,9 +443,10 @@ function SingerDetail({ R, sSng, sSSng, togAct, togTy, sESng, noti }) {
       <div style={{ display: 'flex', gap: 9, marginBottom: 9 }}>
         <Btn grad={G.purple} onClick={() => { sSSng(null); sESng(s.id) }}><Pencil size={16} />Edit Details</Btn>
       </div>
-      <div style={{ display: 'flex', gap: 9 }}>
+      <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
         <Btn ghost onClick={() => togAct(s.id)}>{s.active ? 'Mark Inactive' : 'Reactivate'}</Btn>
         <Btn ghost onClick={() => togTy(s.id)}>{s.singer_type === 'member' ? '→ Make Guest' : '→ Make Core'}</Btn>
+        <Btn ghost danger onClick={() => delS(s.id)}><Trash size={15} />Delete</Btn>
       </div>
     </div>
   </Modal>
@@ -445,7 +505,7 @@ function LineupList({ aR, ea, onTog, onSet }) {
 }
 
 /* ---------- bookings (leads) ---------- */
-function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG, togSel }) {
+function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG, togSel, delI }) {
   const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
   const fd = I.filter(i => lf === 'all' || i.status === lf).slice().sort((a, b) => {
     const la = a.status === 'lost' ? 1 : 0, lb = b.status === 'lost' ? 1 : 0
@@ -513,6 +573,7 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
             {(inq.status === 'new' || inq.status === 'contacted') && <Btn grad={covered || isDJ ? G.green : G.amber} onClick={() => updIS(inq.id, 'confirmed')}><Check size={16} />Confirm with client{!covered && !isDJ ? ' anyway' : ''}</Btn>}
             {inq.status === 'confirmed' && <Btn grad={G.green} onClick={() => convE(inq)}><Calendar size={16} />Add to Events</Btn>}
             {inq.status !== 'lost' && inq.status !== 'confirmed' && <Btn ghost danger onClick={() => updIS(inq.id, 'lost')}>Mark Lost</Btn>}
+            <Btn ghost danger onClick={() => delI(inq.id)}><Trash size={15} />Delete</Btn>
           </div>
         </div>
       </div>
@@ -621,7 +682,7 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 }
 
 /* ---------- events ---------- */
-function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel }) {
+function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv }) {
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
     const progN = (ev.songs_planned || []).length
@@ -632,7 +693,7 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
       { key: 'proposal', label: 'Proposal', done: false, hint: 'Send the song program to the client.', actionLabel: progN > 0 ? 'Send proposal' : null, onAction: () => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) }) },
     ]
     return <div className="fade">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><BackBtn onClick={() => sSEv(null)} /><Btn ghost small onClick={() => sEEv(ev.id)}><Pencil size={14} />Edit Event</Btn></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><BackBtn onClick={() => sSEv(null)} /><div style={{ display: 'flex', gap: 8 }}><Btn ghost small onClick={() => sEEv(ev.id)}><Pencil size={14} />Edit Event</Btn><Btn ghost small danger onClick={() => delEv(ev.id)}><Trash size={14} />Delete</Btn></div></div>
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ background: ok ? G.green : pc ? G.amber : 'linear-gradient(135deg,#F87171,#EF4444)', padding: '24px 26px', color: '#fff' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

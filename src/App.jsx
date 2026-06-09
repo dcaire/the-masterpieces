@@ -457,7 +457,7 @@ function SingerDetail({ R, sSng, sSSng, togAct, togTy, sESng, noti, delS }) {
         <Row ic={<Clock size={16} />}>Joined {fmt(s.joined_date)}</Row>
       </div>
       {s.singer_type !== 'director' && <div style={{ background: '#1a1a1a', borderRadius: 13, padding: 14, marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}><Mail size={14} color="#c8102e" /><span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: '#c8102e' }}>Singer Portal</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}><Mail size={14} color="#ff6b6b" /><span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: '#ff6b6b' }}>Singer Portal</span></div>
         <div style={{ fontSize: 12, color: '#c9d2e2', marginBottom: 10 }}>{first}’s private link to their schedule &amp; sheet music — no password needed.</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><Btn small grad={G.amber} onClick={copyPortal}><Copy size={13} />Copy link</Btn>{s.email && <Btn small ghost onClick={emailPortal}><Send size={13} />Email it to {first}</Btn>}</div>
       </div>}
@@ -878,12 +878,12 @@ function EmailComposer({ email, sEmail, aR, onLogged, noti, emailCfg, emailFrom 
 const Header = ({ title, sub, action }) => <div style={{ marginBottom: 22 }}>
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
     <div><h1 className="serif gtext" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' }}>{title}</h1><p className="ui" style={{ color: '#6e6e82', fontSize: 13.5, marginTop: 4 }}>{sub}</p></div>
-    {action && <button onClick={action.on} className="ui" style={{ padding: '11px 20px', borderRadius: 8, background: '#1a1a1a', color: '#c8102e', fontSize: 11.5, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 8px 20px rgba(13,26,48,.22)' }}>{action.icon || <Plus size={17} />}{action.label}</button>}
+    {action && <button onClick={action.on} className="ui" style={{ padding: '11px 20px', borderRadius: 8, background: '#1a1a1a', color: '#ff6b6b', fontSize: 11.5, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 8px 20px rgba(13,26,48,.22)' }}>{action.icon || <Plus size={17} />}{action.label}</button>}
   </div>
   <div style={{ marginTop: 12 }}><MusicalPhrase variant="light" vh={34} /></div>
 </div>
 const Filter = ({ opts, val, set }) => <div style={{ display: 'inline-flex', gap: 3, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #efe6d4', marginBottom: 18, flexWrap: 'wrap' }}>{opts.map(([v, l]) => <button key={v} onClick={() => set(v)} style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: val === v ? G.purple : 'transparent', color: val === v ? '#fff' : '#6e6e82', transition: 'all .15s' }}>{l}</button>)}</div>
-const Btn = ({ children, grad, ghost, danger, small, ...p }) => { const isNavy = !ghost && (!grad || grad === G.purple); return <button {...p} className="ui" style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 8, fontSize: small ? 11 : 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, background: ghost ? '#fff' : (grad || G.purple), color: ghost ? (danger ? '#B91C1C' : '#4a4a5e') : (isNavy ? '#c8102e' : '#fff'), border: ghost ? `1px solid ${danger ? '#FECACA' : '#e2d6bd'}` : 'none', boxShadow: ghost ? 'none' : '0 6px 16px rgba(13,26,48,.18)' }}>{children}</button> }
+const Btn = ({ children, grad, ghost, danger, small, ...p }) => { const isNavy = !ghost && (!grad || grad === G.purple); return <button {...p} className="ui" style={{ padding: small ? '7px 13px' : '10px 17px', borderRadius: 8, fontSize: small ? 11 : 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 7, background: ghost ? '#fff' : (grad || G.purple), color: ghost ? (danger ? '#B91C1C' : '#4a4a5e') : (isNavy ? '#ff6b6b' : '#fff'), border: ghost ? `1px solid ${danger ? '#FECACA' : '#e2d6bd'}` : 'none', boxShadow: ghost ? 'none' : '0 6px 16px rgba(13,26,48,.18)' }}>{children}</button> }
 const BackBtn = ({ onClick }) => <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#2a2a2a', fontSize: 13.5, fontWeight: 700, marginBottom: 18 }}><Arrow size={16} style={{ transform: 'rotate(180deg)' }} />Back</button>
 const EmailStatus = ({ cfg, from }) => { const map = { checking: ['#f0e8d6', '#6e6e82', 'Checking email…'], on: ['#D1FAE5', '#047857', `Email connected${from ? ' · ' + from : ''}`], off: ['#FEF3C7', '#B45309', 'Email not configured'], error: ['#FEE2E2', '#B91C1C', 'Email check failed'] }; const [bg, fg, label] = map[cfg] || map.checking; return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', borderRadius: 999, background: bg, color: fg, fontSize: 11.5, fontWeight: 700 }}><Mail size={13} />{label}</span> }
 // Guided "what's next" coach. `steps` = [{ key, label, done, hint, actionLabel?, onAction? }]
@@ -894,7 +894,7 @@ function NextStepCard({ steps }) {
   return <div style={{ background: '#1a1a1a', borderRadius: 14, padding: '15px 18px', marginBottom: 20, color: '#fff', boxShadow: '0 10px 28px rgba(13,26,48,.22)' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
       <Sparkle size={15} color="#c8102e" />
-      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: '#c8102e' }}>{cur ? 'Next step' : 'All set 🎉'}</span>
+      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: '#ff6b6b' }}>{cur ? 'Next step' : 'All set 🎉'}</span>
       <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9aa4b8', fontWeight: 700 }}>{doneN}/{steps.length} done</span>
     </div>
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: cur ? 13 : 0 }}>
@@ -963,7 +963,7 @@ function BookingWizard({ onX, onOk }) {
     <div style={{ background: G.purple, padding: '20px 26px', color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <h2 className="serif" style={{ fontSize: 20, fontWeight: 700 }}>New Booking · {steps[step].t}</h2>
-        <span style={{ fontSize: 12, color: '#c8102e', fontWeight: 700 }}>Step {step + 1} of {steps.length}</span>
+        <span style={{ fontSize: 12, color: '#ff6b6b', fontWeight: 700 }}>Step {step + 1} of {steps.length}</span>
       </div>
       <div style={{ fontSize: 12.5, opacity: .9, marginTop: 2 }}>{steps[step].sub}</div>
       <div style={{ height: 6, background: 'rgba(255,255,255,.15)', borderRadius: 4, marginTop: 12 }}><div style={{ height: '100%', width: `${(step + 1) / steps.length * 100}%`, background: '#c8102e', borderRadius: 4, transition: 'width .3s' }} /></div>

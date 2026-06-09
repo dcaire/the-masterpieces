@@ -7,18 +7,26 @@ const VP = {
 }
 const fmtLong = d => { if (!d) return 'Date TBD'; try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) } catch { return d } }
 const RESP = { yes: { fg: '#16a34a', l: 'Yes, I’m in' }, pending: { fg: '#B45309', l: 'Maybe' }, no: { fg: '#dc2626', l: 'Can’t make it' } }
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 export default function MemberPortal({ token }) {
   const [state, setState] = useState({ loading: true })
   const [saving, setSaving] = useState(null)
+  const [blackouts, setBlackouts] = useState(new Set())
 
   const load = async () => {
     const { data, error } = await sb.functions.invoke('member-portal', { body: { token } })
     if (error) { let m = 'Something went wrong.'; try { const j = await error.context.json(); if (j?.error) m = j.error } catch { /* ignore */ } setState({ loading: false, error: m }); return }
     if (data?.error) { setState({ loading: false, error: data.error }); return }
-    setState({ loading: false, member: data.member, events: data.events || [] })
+    setBlackouts(new Set(data.blackouts || []))
+    setState({ loading: false, member: data.member, director: data.director, events: data.events || [] })
   }
   useEffect(() => { load() }, [])
+
+  const toggleBlock = async (k) => {
+    const next = new Set(blackouts); next.has(k) ? next.delete(k) : next.add(k); setBlackouts(next)
+    await sb.functions.invoke('member-portal', { body: { token, action: 'toggleBlock', date: k } })
+  }
 
   const rsvp = async (eventId, response) => {
     setSaving(eventId + response)
@@ -78,6 +86,8 @@ export default function MemberPortal({ token }) {
             </div>
           </div>)}
 
+          <Blackouts blackouts={blackouts} onToggle={toggleBlock} eventDates={new Set((state.events || []).map(e => e.event_date).filter(Boolean))} />
+
           {state.director
             ? <div style={{ background: '#fff', border: '1px solid #efe6d4', borderRadius: 14, padding: '16px 18px', marginTop: 10, textAlign: 'center' }}>
               <div style={{ fontSize: 12, color: '#8a8598' }}>Questions about a performance?</div>
@@ -90,6 +100,47 @@ export default function MemberPortal({ token }) {
             </div>
             : <div style={{ textAlign: 'center', color: '#a8a3b5', fontSize: 12, marginTop: 26 }}>Questions? Just reply to the director’s email.</div>}
         </>}
+    </div>
+  </div>
+}
+
+// Calendar where a singer marks the dates they CAN'T sing.
+function Blackouts({ blackouts, onToggle, eventDates }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0); const tkey = ymd(today)
+  const [off, setOff] = useState(0)
+  const base = new Date(today.getFullYear(), today.getMonth() + off, 1)
+  const y = base.getFullYear(), m = base.getMonth()
+  const firstDow = new Date(y, m, 1).getDay(); const days = new Date(y, m + 1, 0).getDate()
+  const cells = []; for (let i = 0; i < firstDow; i++) cells.push(null); for (let d = 1; d <= days; d++) cells.push(new Date(y, m, d)); while (cells.length % 7) cells.push(null)
+  const navBtn = { width: 32, height: 32, borderRadius: 8, border: '1px solid #e2d6bd', background: '#fff', color: '#1c3564', fontSize: 17, fontWeight: 700, cursor: 'pointer' }
+  return <div style={{ background: '#fff', border: '1px solid #efe6d4', borderRadius: 16, padding: 18, marginTop: 24, boxShadow: '0 8px 22px rgba(13,26,48,.06)' }}>
+    <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '.03em', color: '#1a1a2e' }}>When you can’t sing</div>
+    <div style={{ fontSize: 12.5, color: '#8a8598', margin: '4px 0 14px' }}>Tap any day you’re unavailable. Beth sees this instantly — no email needed. Tap again to clear it.</div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <button onClick={() => setOff(off - 1)} style={navBtn}>‹</button>
+      <span style={{ fontSize: 15, fontWeight: 700 }}>{base.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+      <button onClick={() => setOff(off + 1)} style={navBtn}>›</button>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
+      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, i) => <div key={i} style={{ textAlign: 'center', fontSize: 10.5, fontWeight: 800, color: '#a8a3b5', padding: '0 0 4px' }}>{w}</div>)}
+      {cells.map((d, i) => {
+        if (!d) return <div key={i} />
+        const k = ymd(d); const past = d < today; const blocked = blackouts.has(k); const isEvent = eventDates.has(k); const isToday = k === tkey
+        return <button key={i} disabled={past} onClick={() => onToggle(k)} title={isEvent ? 'You’re booked to sing this day' : ''} style={{
+          minHeight: 46, borderRadius: 9, cursor: past ? 'default' : 'pointer', position: 'relative',
+          border: isToday ? '2px solid #1c3564' : '1px solid #f0e8d6',
+          background: blocked ? '#fde2e2' : past ? '#f7f3ea' : '#fff',
+          color: past ? '#cfc6b4' : blocked ? '#b91c1c' : '#4a4a5e', fontSize: 13, fontWeight: blocked ? 800 : 600,
+        }}>
+          {d.getDate()}
+          {blocked && <span style={{ position: 'absolute', bottom: 4, left: 0, right: 0, fontSize: 8.5, fontWeight: 800, color: '#dc2626' }}>OUT</span>}
+          {isEvent && !blocked && <span style={{ position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', background: '#16a34a' }} />}
+        </button>
+      })}
+    </div>
+    <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#8a8598', marginTop: 12 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: '#fde2e2', border: '1px solid #f3b4b4' }} />Can’t sing</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a' }} />You’re booked</span>
     </div>
   </div>
 }

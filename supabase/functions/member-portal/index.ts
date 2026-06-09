@@ -26,6 +26,7 @@ async function rest(path: string, opts: RequestInit = {}) {
 }
 const jget = async (path: string) => { const r = await rest(path); return r.ok ? await r.json() : []; };
 const sanitizeToken = (t: string) => /^[0-9a-fA-F-]{10,40}$/.test(t) ? t : "";
+const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -54,6 +55,19 @@ Deno.serve(async (req: Request) => {
       await rest(`member_availability`, { method: "POST", body: JSON.stringify({ event_id: eventId, roster_id: member.id, response, responded_at: new Date().toISOString() }) });
     }
     return json({ ok: true });
+  }
+
+  // Toggle a blackout date (singer marks/unmarks themselves unavailable)
+  if (body?.action === "toggleBlock") {
+    const date = String(body?.date || "");
+    if (!isDate(date)) return json({ error: "Bad date" }, 400);
+    const ex = await jget(`unavailability?roster_id=eq.${member.id}&date=eq.${date}&select=id`);
+    if (Array.isArray(ex) && ex[0]) {
+      await rest(`unavailability?id=eq.${ex[0].id}`, { method: "DELETE" });
+      return json({ ok: true, blocked: false });
+    }
+    await rest(`unavailability`, { method: "POST", body: JSON.stringify({ roster_id: member.id, date }) });
+    return json({ ok: true, blocked: true });
   }
 
   // The singer's events
@@ -105,5 +119,9 @@ Deno.serve(async (req: Request) => {
   const dirs = await jget(`roster?singer_type=eq.director&select=name,email,phone&limit=1`);
   const director = Array.isArray(dirs) ? dirs[0] || null : null;
 
-  return json({ member: { name: member.name, voice_part: member.voice_part, singer_type: member.singer_type }, director, events: out });
+  // the singer's own blackout dates
+  const blk = await jget(`unavailability?roster_id=eq.${member.id}&select=date&order=date.asc`);
+  const blackouts = (blk || []).map((b: any) => b.date);
+
+  return json({ member: { name: member.name, voice_part: member.voice_part, singer_type: member.singer_type }, director, events: out, blackouts });
 });

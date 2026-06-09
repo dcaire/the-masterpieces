@@ -98,7 +98,7 @@ const SectionTitle = ({ children }) => <div style={{ fontSize: 11.5, fontWeight:
 /* ---------- app ---------- */
 export default function App() {
   const [tab, sTab] = useState('dashboard')
-  const [R, sR] = useState([]); const [M, sM] = useState([]); const [I, sI] = useState([]); const [E, sE] = useState([]); const [A, sA] = useState([])
+  const [R, sR] = useState([]); const [M, sM] = useState([]); const [I, sI] = useState([]); const [E, sE] = useState([]); const [A, sA] = useState([]); const [U, sU] = useState([])
   const [ld, sLd] = useState(true); const [err, sErr] = useState(null); const [toast, sTst] = useState(null)
   const [sInq, sSInq] = useState(null); const [sEv, sSEv] = useState(null); const [sSng, sSSng] = useState(null)
   const [rf, sRf] = useState('all'); const [lf, sLf] = useState('all'); const [mf, sMf] = useState('all'); const [q, sQ] = useState('')
@@ -120,13 +120,14 @@ export default function App() {
 
   useEffect(() => { (async () => {
     try {
-      const [r, m, i, e, a, pr] = await Promise.all([
+      const [r, m, i, e, a, pr, u] = await Promise.all([
         sb.from('roster').select('*').order('id'), sb.from('music_library').select('*').order('id'),
         sb.from('inquiries').select('*').order('created_at', { ascending: false }),
         sb.from('events').select('*').order('event_date'), sb.from('member_availability').select('*'),
-        sb.from('prospects').select('*').order('fit_score', { ascending: false })])
+        sb.from('prospects').select('*').order('fit_score', { ascending: false }),
+        sb.from('unavailability').select('*')])
       if (r.error) throw r.error
-      sR(r.data || []); sM(m.data || []); sI(i.data || []); sE(e.data || []); sA(a.data || []); sP(pr.data || [])
+      sR(r.data || []); sM(m.data || []); sI(i.data || []); sE(e.data || []); sA(a.data || []); sP(pr.data || []); sU(u.data || [])
     } catch (e) { sErr(e.message || 'Connection failed') }
     sLd(false)
   })() }, [])
@@ -205,9 +206,9 @@ export default function App() {
       {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom, openEvent, openBooking }} />}
       {tab === 'ensemble' && <Ensemble {...{ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
-      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel, delI }} />}
+      {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel, delI, U }} />}
       {tab === 'prospects' && <Prospects {...{ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, updPS, sEP, convP, sEmail }} />}
-      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv }} />}
+      {tab === 'events' && <Events {...{ E, sEv, sSEv, updR, M, R, aR: lineupR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }} />}
     </main>
 
     {sSng && <SingerDetail {...{ R, sSng, sSSng, togAct, togTy, sESng, noti, delS }} />}
@@ -487,17 +488,17 @@ function Music({ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMu
 }
 
 /* ---------- shared lineup list: pick singers inline + track availability ---------- */
-function LineupList({ aR, ea, onTog, onSet }) {
+function LineupList({ aR, ea, onTog, onSet, away }) {
   const order = { Soprano: 0, Alto: 1, Tenor: 2, Bass: 3 }
   const list = [...aR].sort((a, b) => (order[a.voice_part] ?? 9) - (order[b.voice_part] ?? 9))
   if (!list.length) return <Empty>No active singers — add singers in the Ensemble tab first.</Empty>
   return <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>{list.map(m => {
-    const inL = ea[m.id] !== undefined; const resp = ea[m.id] || 'pending'; const pcv = VP[m.voice_part] || VP.Soprano
-    return <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 13px', background: inL ? '#eef2fb' : '#faf5e9', border: `1px solid ${inL ? '#cbd8f0' : 'transparent'}`, borderRadius: 11 }}>
+    const inL = ea[m.id] !== undefined; const resp = ea[m.id] || 'pending'; const pcv = VP[m.voice_part] || VP.Soprano; const isAway = away && away.has(m.id)
+    return <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 13px', background: isAway ? '#fdf1f1' : inL ? '#eef2fb' : '#faf5e9', border: `1px solid ${isAway ? '#f3cccc' : inL ? '#cbd8f0' : 'transparent'}`, borderRadius: 11 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
         <button onClick={() => onTog(m.id)} title={inL ? 'Remove from lineup' : 'Add to lineup'} style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: inL ? '#1c3564' : '#fff', border: `1.5px solid ${inL ? '#1c3564' : '#d8cbb0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{inL ? <Check size={14} color="#fff" /> : <Plus size={14} color="#b6a98c" />}</button>
         <Avatar name={m.name} part={m.voice_part} type={m.singer_type} size={34} />
-        <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{m.name}</div><div style={{ display: 'flex', gap: 5, marginTop: 2 }}><Pill bg={pcv.bg} fg={pcv.fg}>{m.voice_part}</Pill>{m.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">guest</Pill>}</div></div>
+        <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{m.name}</div><div style={{ display: 'flex', gap: 5, marginTop: 2 }}><Pill bg={pcv.bg} fg={pcv.fg}>{m.voice_part}</Pill>{m.singer_type === 'guest' && <Pill bg="#FEF3C7" fg="#B45309">guest</Pill>}{isAway && <Pill bg="#FEE2E2" fg="#B91C1C">✕ Away this date</Pill>}</div></div>
       </div>
       {inL ? <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>{['yes', 'pending', 'no'].map(r => { const c = RESP[r]; const on = resp === r; return <button key={r} onClick={() => onSet(m.id, r)} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 11.5, fontWeight: 700, background: on ? c.fg : '#eee', color: on ? '#fff' : '#9ca3af' }}>{r === 'pending' ? 'maybe' : r}</button> })}</div> : <button onClick={() => onTog(m.id)} style={{ fontSize: 11.5, color: '#1c3564', fontWeight: 700, flexShrink: 0 }}>Add to lineup</button>}
     </div>
@@ -505,7 +506,7 @@ function LineupList({ aR, ea, onTog, onSet }) {
 }
 
 /* ---------- bookings (leads) ---------- */
-function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG, togSel, delI }) {
+function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR, setFmt, sShG, togSel, delI, U }) {
   const sts = [['all', 'All'], ['new', 'New'], ['contacted', 'Contacted'], ['confirmed', 'Confirmed'], ['lost', 'Lost']]
   const fd = I.filter(i => lf === 'all' || i.status === lf).slice().sort((a, b) => {
     const la = a.status === 'lost' ? 1 : 0, lb = b.status === 'lost' ? 1 : 0
@@ -519,6 +520,7 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
   if (sInq) { const inq = I.find(i => i.id === sInq); if (!inq) return null; const isOD = inq.next_follow_up && new Date(inq.next_follow_up + 'T12:00:00') < new Date()
     const need = inq.singers_needed ?? 4; const ea = aMI[inq.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const covered = yc >= need; const isDJ = need === 0; const smaller = NEED_LABEL[Math.max(0, need - 1)]
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
+    const away = new Set((U || []).filter(u => inq.event_date && u.date === inq.event_date).map(u => u.roster_id)); const awayNames = aR.filter(m => away.has(m.id)).map(m => m.name.split(' ')[0])
     const availObj = { title: `${inq.event_type || 'Performance'} · ${inq.organization || ''}`, event_date: inq.event_date, event_time: '', venue: inq.organization || '' }
     const scrollTo = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     const steps = [
@@ -552,7 +554,8 @@ function Bookings({ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEma
               <div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: availObj, recipients: recips })}><Send size={14} />Email Availability</Btn>}</div>
             </div>
             <div style={{ fontSize: 12, color: '#8a8598', marginBottom: 12 }}>Tap a singer to add them to this event’s lineup, then mark their replies.</div>
-            <LineupList aR={aR} ea={ea} onTog={rid => togSel('inquiry', inq.id, rid)} onSet={(rid, r) => updRI(inq.id, rid, r)} />
+            {awayNames.length > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FEE2E2', color: '#B91C1C', borderRadius: 10, padding: '9px 13px', marginBottom: 12, fontSize: 12.5, fontWeight: 700 }}><Bell size={15} />Marked unavailable on {fmt(inq.event_date)}: {awayNames.join(', ')}</div>}
+            <LineupList aR={aR} ea={ea} away={away} onTog={rid => togSel('inquiry', inq.id, rid)} onSet={(rid, r) => updRI(inq.id, rid, r)} />
             <div style={{ marginTop: 14, padding: '11px 14px', borderRadius: 11, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, background: covered ? '#D1FAE5' : '#FEF3C7', color: covered ? '#047857' : '#B45309' }}>{covered ? <><Check size={16} />Lineup covered — clear to confirm with the client.</> : <><Bell size={16} />{need - yc} more confirmed needed. Add singers above, or downsize below.</>}</div>
             {!covered && <div style={{ display: 'flex', gap: 9, marginTop: 12, flexWrap: 'wrap' }}><Btn small ghost onClick={() => setFmt(inq.id, smaller)}><Arrow size={14} />Downsize to {smaller}</Btn><Btn small ghost onClick={() => setFmt(inq.id, 'DJ')}>Make it a DJ engagement</Btn></div>}
           </div>}
@@ -682,9 +685,10 @@ function Prospects({ P, pf, sPf, ptf, sPtf, pq, sPq, shP, sShP, sPro, sSPro, upd
 }
 
 /* ---------- events ---------- */
-function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv }) {
+function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg, sShG, togSel, delEv, U }) {
   if (sEv) { const ev = E.find(e => e.id === sEv); if (!ev) return null; const ea = aM[ev.id] || {}; const yc = Object.values(ea).filter(r => r === 'yes').length; const pc = Object.values(ea).filter(r => r === 'pending').length; const need = ev.singers_needed ?? 4; const ok = yc >= need
     const sel = aR.filter(m => ea[m.id] !== undefined); const recips = sel.filter(m => m.email).map(m => m.email).join(',')
+    const away = new Set((U || []).filter(u => ev.event_date && u.date === ev.event_date).map(u => u.roster_id)); const awayNames = aR.filter(m => away.has(m.id)).map(m => m.name.split(' ')[0])
     const progN = (ev.songs_planned || []).length
     const scrollTo = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     const evSteps = [
@@ -705,7 +709,8 @@ function Events({ E, sEv, sSEv, updR, M, R, aR, aM, sEmail, sShEv, sEEv, sShProg
         <div style={{ padding: 26 }}>
           <NextStepCard steps={evSteps} />
           {need > 0 && <><div id="ev-avail" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Singer Availability · {yc}/{need} confirmed</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShG(true)}><Plus size={14} />Guest</Btn>{sel.length > 0 && <Btn small grad={G.amber} onClick={() => sEmail({ availability: ev, recipients: recips })}><Send size={14} />Email Request</Btn>}</div></div>
-          <div style={{ marginBottom: 22 }}><LineupList aR={aR} ea={ea} onTog={rid => togSel('event', ev.id, rid)} onSet={(rid, r) => updR(ev.id, rid, r)} /></div></>}
+          {awayNames.length > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FEE2E2', color: '#B91C1C', borderRadius: 10, padding: '9px 13px', marginBottom: 12, fontSize: 12.5, fontWeight: 700 }}><Bell size={15} />Unavailable on {fmt(ev.event_date)}: {awayNames.join(', ')}</div>}
+          <div style={{ marginBottom: 22 }}><LineupList aR={aR} ea={ea} away={away} onTog={rid => togSel('event', ev.id, rid)} onSet={(rid, r) => updR(ev.id, rid, r)} /></div></>}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}><SectionTitle>Program ({(ev.songs_planned || []).length} pieces)</SectionTitle><div style={{ display: 'flex', gap: 8 }}><Btn small ghost onClick={() => sShProg(ev.id)}><Plus size={14} />Edit Program</Btn>{(ev.songs_planned || []).length > 0 && <Btn small grad={G.purple} onClick={() => sEmail({ proposal: ev, songs: (ev.songs_planned || []).map(sid => M.find(x => x.id === sid)?.title).filter(Boolean) })}><Send size={14} />Send Proposal</Btn>}</div></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{(ev.songs_planned || []).map((sid, i) => { const s = M.find(x => x.id === sid); return s ? <div key={sid} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#faf5e9', borderRadius: 10 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: G.purple, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span><span style={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</span><Pill bg={s.cloud_only ? '#f0e8d6' : '#D1FAE5'} fg={s.cloud_only ? '#6e6e82' : '#047857'}>{s.cloud_only ? 'Cloud' : 'iPad'}</Pill></div> : null })}{!(ev.songs_planned || []).length && <Empty>No program set yet.</Empty>}</div>
         </div>

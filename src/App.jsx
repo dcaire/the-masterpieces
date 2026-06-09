@@ -190,12 +190,12 @@ export default function App() {
 
     <header style={{ position: 'sticky', top: 0, zIndex: 100, background: '#1a1a1a', boxShadow: '0 2px 18px rgba(13,26,48,.25)' }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 66 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11, cursor: 'pointer' }} onClick={() => nav('dashboard')}>
-          <Logo size={38} />
-          <div>
-            <div className="ui" style={{ fontSize: 8.5, fontWeight: 300, letterSpacing: '.42em', color: '#c8102e' }}>THE</div>
-            <div className="serif" style={{ fontSize: 19, fontWeight: 700, lineHeight: 1, letterSpacing: '.12em', textTransform: 'uppercase', color: '#fdf8ee' }}>Masterpieces</div>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, cursor: 'pointer' }} onClick={() => nav('dashboard')}>
+          <span style={{ fontFamily: "'Cinzel',Georgia,serif", fontWeight: 600, fontSize: 12.5, letterSpacing: '.07em', color: '#fdf8ee', whiteSpace: 'nowrap' }}>TEXAS MASTER CHORALE</span>
+          <span style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginTop: 1 }}>
+            <span style={{ color: '#c8102e', fontSize: 17, lineHeight: 1, transform: 'translateY(2px)' }}>♪</span>
+            <span style={{ fontFamily: "'Yellowtail',cursive", fontSize: 25, color: '#c8102e', lineHeight: .8 }}>Masterpieces</span>
+          </span>
         </div>
         <nav className="ui" style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,.06)', padding: 4, borderRadius: 11 }}>{tabs.map(([id, l, Ic]) => <button key={id} onClick={() => nav(id)} style={{ padding: '8px 14px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: tab === id ? '#1a1a1a' : '#9aa6bd', background: tab === id ? '#c8102e' : 'transparent', transition: 'all .2s' }}><Ic size={14} />{l}</button>)}</nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

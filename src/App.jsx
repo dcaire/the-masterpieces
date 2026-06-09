@@ -203,7 +203,7 @@ export default function App() {
     </header>
 
     <main style={{ maxWidth: 1180, margin: '0 auto', padding: '30px 22px 70px' }}>
-      {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom, openEvent, openBooking }} />}
+      {tab === 'dashboard' && <Dash {...{ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom, openEvent, openBooking, U }} />}
       {tab === 'ensemble' && <Ensemble {...{ core, guests, dirs, rf, sRf, sSSng, addS, togAct, togTy, shS, sShS }} />}
       {tab === 'music' && <Music {...{ M, q, sQ, mf, sMf, togSync, tMB, sN, sMB, shM, sShM, addM, sEMus }} />}
       {tab === 'bookings' && <Bookings {...{ I, lf, sLf, shI, sShI, sInq, sSInq, updIS, logFU, addI, sEmail, sEInq, convE, aMI, updRI, aR: lineupR, setFmt, sShG, togSel, delI, U }} />}
@@ -279,7 +279,10 @@ function MissionHero() {
 
 /* ---------- month calendar (dashboard) ---------- */
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-function CalendarCard({ E, I, openEvent, openBooking }) {
+const dayAdd = (k, n) => { const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() + n); return ymd(d) }
+const shortD = k => new Date(k + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const groupPeriods = dates => { const s = [...dates].sort(); const out = []; let st = null, pv = null; for (const k of s) { if (st && k === dayAdd(pv, 1)) pv = k; else { if (st) out.push([st, pv]); st = k; pv = k } } if (st) out.push([st, pv]); return out }
+function CalendarCard({ E, I, openEvent, openBooking, U, R }) {
   const today = new Date(); const tkey = ymd(today)
   const [off, setOff] = useState(0)
   const [sel, setSel] = useState(tkey)
@@ -291,6 +294,11 @@ function CalendarCard({ E, I, openEvent, openBooking }) {
     I.forEach(i => { if (i.event_date && i.status !== 'lost') (o[i.event_date] ||= []).push({ type: 'booking', id: i.id, title: `${i.contact_name} · ${i.event_type}`, color: '#e8b430' }) })
     return o
   }, [E, I])
+  const awayBy = useMemo(() => { const o = {}; (U || []).forEach(u => { const r = (R || []).find(x => x.id === u.roster_id); (o[u.date] ||= []).push(r ? r.name.split(' ')[0] : '?') }); return o }, [U, R])
+  const awayUpcoming = useMemo(() => {
+    const byR = {}; (U || []).forEach(u => { if (u.date >= tkey) (byR[u.roster_id] ||= []).push(u.date) })
+    return Object.entries(byR).map(([rid, dates]) => { const r = (R || []).find(x => x.id === +rid); return { name: r ? r.name : 'Unknown', part: r ? r.voice_part : '', periods: groupPeriods(dates) } }).filter(x => x.periods.length).sort((a, b) => a.periods[0][0] < b.periods[0][0] ? -1 : 1)
+  }, [U, R, tkey])
   const firstDow = new Date(y, m, 1).getDay(); const days = new Date(y, m + 1, 0).getDate()
   const cells = []; for (let i = 0; i < firstDow; i++) cells.push(null); for (let d = 1; d <= days; d++) cells.push(new Date(y, m, d)); while (cells.length % 7) cells.push(null)
   const selItems = items[sel] || []
@@ -311,11 +319,11 @@ function CalendarCard({ E, I, openEvent, openBooking }) {
         const k = ymd(d); const its = items[k] || []; const isToday = k === tkey; const isSel = k === sel
         return <button key={i} onClick={() => setSel(k)} style={{ minHeight: 50, borderRadius: 9, border: isSel ? '2px solid #1c3564' : '1px solid #f0e8d6', background: isToday ? '#faf3e6' : '#fff', padding: '5px 0 4px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
           <span style={{ fontSize: 12.5, fontWeight: isToday ? 800 : 600, color: isToday ? '#1c3564' : '#4a4a5e' }}>{d.getDate()}</span>
-          <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>{its.slice(0, 3).map((it, j) => <span key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: it.color }} />)}</div>
+          <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>{its.slice(0, 3).map((it, j) => <span key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: it.color }} />)}{awayBy[k] && <span title="Singer(s) unavailable" style={{ width: 6, height: 6, borderRadius: '50%', background: '#dc2626' }} />}</div>
         </button>
       })}
     </div>
-    <div style={{ display: 'flex', gap: 14, fontSize: 11, color: '#8a8598', margin: '12px 0 4px' }}><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a' }} />Events</span><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e8b430' }} />Bookings</span></div>
+    <div style={{ display: 'flex', gap: 14, fontSize: 11, color: '#8a8598', margin: '12px 0 4px', flexWrap: 'wrap' }}><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a' }} />Events</span><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e8b430' }} />Bookings</span><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626' }} />Singer away</span></div>
     <div style={{ borderTop: '1px solid #efe6d4', marginTop: 8, paddingTop: 12 }}>
       <SectionTitle>{new Date(sel + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</SectionTitle>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 8 }}>
@@ -325,13 +333,22 @@ function CalendarCard({ E, I, openEvent, openBooking }) {
           <Pill bg={it.type === 'event' ? '#D1FAE5' : '#FEF3C7'} fg={it.type === 'event' ? '#047857' : '#B45309'}>{it.type}</Pill>
           <Arrow size={15} style={{ color: '#cfc8d8', flexShrink: 0 }} />
         </button>) : <div style={{ fontSize: 13, color: '#a8a3b5', padding: '6px 0' }}>Nothing scheduled this day.</div>}
+        {awayBy[sel]?.length > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FEE2E2', color: '#B91C1C', borderRadius: 10, padding: '9px 12px', fontSize: 12.5, fontWeight: 700 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', flexShrink: 0 }} />Unavailable: {awayBy[sel].join(', ')}</div>}
       </div>
     </div>
+    {awayUpcoming.length > 0 && <div style={{ borderTop: '1px solid #efe6d4', marginTop: 12, paddingTop: 12 }}>
+      <SectionTitle>Who’s away · upcoming</SectionTitle>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 8 }}>{awayUpcoming.map((s, i) => { const pc = VP[s.part] || VP.Soprano; return <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 11, background: '#fdf1f1' }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: pc.fg, flexShrink: 0 }} />
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1a1a2e', flexShrink: 0 }}>{s.name.split(' ')[0]}</span>
+        <span style={{ fontSize: 12.5, color: '#B91C1C', textAlign: 'right', flex: 1 }}>{s.periods.map(([a, b]) => a === b ? shortD(a) : `${shortD(a)}–${shortD(b)}`).join(', ')}</span>
+      </div> })}</div>
+    </div>}
   </div>
 }
 
 /* ---------- dashboard ---------- */
-function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom, openEvent, openBooking }) {
+function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, emailCfg, emailFrom, openEvent, openBooking, U }) {
   const hr = new Date().getHours()
   const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
   const nxt = E.filter(e => dU(e.event_date) > 0).sort((a, b) => new Date(a.event_date) - new Date(b.event_date))[0]
@@ -361,7 +378,7 @@ function Dash({ R, aR, core, guests, M, I, E, aM, tMB, sN, sMB, pFU, pipe, nav, 
         <div style={{ fontSize: 12.5, color: '#8a8598', marginTop: 2 }}>{c.s}</div>
       </div>)}
     </div>
-    <CalendarCard E={E} I={I} openEvent={openEvent} openBooking={openBooking} />
+    <CalendarCard E={E} I={I} openEvent={openEvent} openBooking={openBooking} U={U} R={R} />
     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 18 }}>
       {nxt ? <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ background: G.purple, padding: '20px 24px', color: '#fff', position: 'relative', overflow: 'hidden' }}>

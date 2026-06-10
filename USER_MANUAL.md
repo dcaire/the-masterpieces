@@ -145,7 +145,13 @@ Keep past clients warm with periodic "we're available" reminders.
 
 ---
 
-## 9. (covered above)
+## 9. The lifecycle at a glance
+
+Every performance follows the same path through the app:
+
+**Prospect → Booking (inquiry) → confirm → Event → (after the date) → Archive.**
+
+A *prospect* you reach out to becomes a *booking* when they're interested. You build the lineup and confirm it, then **Add to Events**. Once the date passes, it moves to the **Archive** automatically — where it feeds revenue totals and the re-engagement drip. Nothing is ever lost; each tab is just a different window onto the same journey.
 
 ---
 
